@@ -1,4 +1,3 @@
-
 import { useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,6 +9,9 @@ import { Input } from "@/components/ui/input"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import { CreditCard, Search, Filter, CheckCircle, DollarSign } from "lucide-react"
+
+type InstallmentStatus = 'pending' | 'paid' | 'overdue'
+type PaymentMethod = 'crypto' | 'stripe' | 'bank_transfer' | 'paypal'
 
 export default function Payments() {
   const [statusFilter, setStatusFilter] = useState<string>("all")
@@ -33,7 +35,7 @@ export default function Payments() {
         .order('due_date', { ascending: true })
 
       if (statusFilter !== 'all') {
-        query = query.eq('status', statusFilter)
+        query = query.eq('status', statusFilter as InstallmentStatus)
       }
 
       const { data, error } = await query
@@ -53,11 +55,11 @@ export default function Payments() {
   })
 
   const markAsPaidMutation = useMutation({
-    mutationFn: async ({ installmentId, paymentMethod }: { installmentId: string, paymentMethod: string }) => {
+    mutationFn: async ({ installmentId, paymentMethod }: { installmentId: string, paymentMethod: PaymentMethod }) => {
       const { error } = await supabase
         .from('installments')
         .update({
-          status: 'paid',
+          status: 'paid' as InstallmentStatus,
           payment_date: new Date().toISOString().split('T')[0],
           payment_method: paymentMethod,
           updated_at: new Date().toISOString()
@@ -290,7 +292,7 @@ export default function Payments() {
                               size="sm"
                               onClick={() => markAsPaidMutation.mutate({
                                 installmentId: installment.id,
-                                paymentMethod: 'stripe'
+                                paymentMethod: 'stripe' as PaymentMethod
                               })}
                               disabled={markAsPaidMutation.isPending}
                               className="bg-green-600 hover:bg-green-700"

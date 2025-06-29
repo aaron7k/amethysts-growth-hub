@@ -1,4 +1,3 @@
-
 import { useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -18,6 +17,8 @@ const ONBOARDING_STEPS = [
   { id: 'high_level_account_created', label: 'Cuenta de High Level Creada' },
   { id: 'discord_access_granted', label: 'Acceso a Canales de Discord Concedido' }
 ]
+
+type NextStep = 'in_service' | 'needs_contact' | 'pending_onboarding' | 'pending_renewal' | 'overdue_payment'
 
 export default function Onboarding() {
   const [selectedSubscription, setSelectedSubscription] = useState<string>('')
@@ -46,7 +47,7 @@ export default function Onboarding() {
   })
 
   const updateOnboardingMutation = useMutation({
-    mutationFn: async (data: { subscriptionId: string, nextStep: string, notes?: string }) => {
+    mutationFn: async (data: { subscriptionId: string, nextStep: NextStep, notes?: string }) => {
       const { error } = await supabase
         .from('subscriptions')
         .update({
@@ -93,7 +94,7 @@ export default function Onboarding() {
 
     updateOnboardingMutation.mutate({
       subscriptionId,
-      nextStep: 'in_service',
+      nextStep: 'in_service' as NextStep,
       notes: notes
     })
   }
@@ -101,7 +102,7 @@ export default function Onboarding() {
   const markAsNeedsContact = (subscriptionId: string) => {
     updateOnboardingMutation.mutate({
       subscriptionId,
-      nextStep: 'needs_contact',
+      nextStep: 'needs_contact' as NextStep,
       notes: notes
     })
   }

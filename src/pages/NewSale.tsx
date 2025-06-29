@@ -1,4 +1,3 @@
-
 import { useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "react-router-dom"
@@ -27,7 +26,7 @@ export default function NewSale() {
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0])
   const [callLevelIncluded, setCallLevelIncluded] = useState(false)
   const [notes, setNotes] = useState('')
-  const [firstPaymentMethod, setFirstPaymentMethod] = useState('stripe')
+  const [firstPaymentMethod, setFirstPaymentMethod] = useState<'stripe' | 'crypto' | 'bank_transfer' | 'paypal'>('stripe')
   
   const { toast } = useToast()
   const navigate = useNavigate()
@@ -82,17 +81,21 @@ export default function NewSale() {
         throw new Error('Cliente y plan son requeridos')
       }
 
-      // Step 2: Create subscription
+      // Step 2: Create subscription with calculated end_date
       const totalCost = selectedPlan?.price_usd || 0
+      const endDate = new Date(startDate)
+      endDate.setDate(endDate.getDate() + (selectedPlan?.duration_days || 0))
+
       const { data: subscription, error: subscriptionError } = await supabase
         .from('subscriptions')
         .insert({
           client_id: clientId,
           plan_id: selectedPlanId,
           start_date: startDate,
+          end_date: endDate.toISOString().split('T')[0],
           total_cost_usd: totalCost,
-          status: 'active',
-          next_step: 'pending_onboarding',
+          status: 'active' as const,
+          next_step: 'pending_onboarding' as const,
           call_level_included: callLevelIncluded,
           notes: notes
         })
@@ -125,7 +128,7 @@ export default function NewSale() {
           installment_number: i,
           amount_usd: amount,
           due_date: dueDate.toISOString().split('T')[0],
-          status: i === 1 ? 'paid' : 'pending',
+          status: (i === 1 ? 'paid' : 'pending') as const,
           payment_method: i === 1 ? firstPaymentMethod : null,
           payment_date: i === 1 ? startDate : null
         })
@@ -186,7 +189,7 @@ export default function NewSale() {
                     <SelectValue placeholder="Seleccionar cliente existente..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">-- Crear nuevo cliente --</SelectItem>
+                    <SelectItem value="new-client">-- Crear nuevo cliente --</SelectItem>
                     {existingClients?.map((client) => (
                       <SelectItem key={client.id} value={client.id}>
                         {client.full_name} ({client.email})
@@ -196,7 +199,7 @@ export default function NewSale() {
                 </Select>
               </div>
 
-              {!selectedClientId && (
+              {(!selectedClientId || selectedClientId === "new-client") && (
                 <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
                   <h4 className="font-medium">Crear Nuevo Cliente</h4>
                   
@@ -327,7 +330,7 @@ export default function NewSale() {
 
               <div>
                 <Label htmlFor="payment_method">Método del Primer Pago</Label>
-                <Select value={firstPaymentMethod} onValueChange={setFirstPaymentMethod}>
+                <Select value={firstPaymentMethod} onValueChange={(value: 'stripe' | 'crypto' | 'bank_transfer' | 'paypal') => setFirstPaymentMethod(value)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>

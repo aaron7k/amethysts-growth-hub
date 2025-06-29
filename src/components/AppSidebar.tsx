@@ -25,9 +25,10 @@ const mainItems = [
 ]
 
 export function AppSidebar() {
-  const { collapsed } = useSidebar()
+  const { state } = useSidebar()
   const location = useLocation()
   const currentPath = location.pathname
+  const collapsed = state === "collapsed"
 
   const isActive = (path: string) => {
     if (path === "/") {
@@ -42,7 +43,7 @@ export function AppSidebar() {
       : "hover:bg-accent hover:text-accent-foreground transition-colors"
 
   return (
-    <Sidebar className={`${collapsed ? "w-16" : "w-64"} border-r border-border bg-card`} collapsible>
+    <Sidebar className={`${collapsed ? "w-16" : "w-64"} border-r border-border bg-card`} collapsible="icon">
       <SidebarHeader className="border-b border-border p-4">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">

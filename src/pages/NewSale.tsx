@@ -1,3 +1,4 @@
+
 import { useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "react-router-dom"
@@ -94,8 +95,8 @@ export default function NewSale() {
           start_date: startDate,
           end_date: endDate.toISOString().split('T')[0],
           total_cost_usd: totalCost,
-          status: 'active' as const,
-          next_step: 'pending_onboarding' as const,
+          status: 'active',
+          next_step: 'pending_onboarding',
           call_level_included: callLevelIncluded,
           notes: notes
         })
@@ -128,7 +129,7 @@ export default function NewSale() {
           installment_number: i,
           amount_usd: amount,
           due_date: dueDate.toISOString().split('T')[0],
-          status: (i === 1 ? 'paid' : 'pending') as const,
+          status: i === 1 ? 'paid' : 'pending',
           payment_method: i === 1 ? firstPaymentMethod : null,
           payment_date: i === 1 ? startDate : null
         })

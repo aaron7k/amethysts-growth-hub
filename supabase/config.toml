@@ -1,1 +1,30 @@
+
 project_id = "gyfmqedtupmpyfjujbwt"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[auth]
+enabled = true
+port = 54324
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://localhost:3000"]
+jwt_expiry = 3600
+enable_signup = true
+email_confirm_timeout = 86400
+password_min_length = 6
+
+[db]
+port = 54322
+
+[functions.client-onboarding-webhook]
+verify_jwt = false
+
+[storage]
+enabled = true
+port = 54323
+file_size_limit = "50MiB"

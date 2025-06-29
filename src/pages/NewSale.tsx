@@ -153,7 +153,7 @@ export default function NewSale() {
       
       toast({
         title: "¡Venta creada exitosamente!",
-        description: "La nueva suscripción ha sido registrada correctamente."
+        description: "La nueva suscripción ha sido registrada y el webhook de onboarding ha sido enviado automáticamente."
       })
       
       navigate(`/clients/${data.clientId}`)

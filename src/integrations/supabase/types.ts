@@ -238,6 +238,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           is_approved: boolean | null
+          phone: string | null
           role: Database["public"]["Enums"]["user_role"] | null
           updated_at: string | null
         }
@@ -249,6 +250,7 @@ export type Database = {
           id: string
           is_active?: boolean | null
           is_approved?: boolean | null
+          phone?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
           updated_at?: string | null
         }
@@ -260,6 +262,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_approved?: boolean | null
+          phone?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
           updated_at?: string | null
         }

@@ -447,6 +447,10 @@ export type Database = {
         Args: { user_id: string } | { user_id: string; approver_id: string }
         Returns: undefined
       }
+      can_access_accelerator_data: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       check_accelerator_stage_changes: {
         Args: Record<PropertyKey, never>
         Returns: undefined

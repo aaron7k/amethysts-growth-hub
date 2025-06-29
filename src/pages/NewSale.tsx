@@ -1,4 +1,3 @@
-
 import { useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "react-router-dom"
@@ -66,8 +65,12 @@ export default function NewSale() {
     mutationFn: async () => {
       let clientId = selectedClientId
 
-      // Step 1: Create client if new
-      if (!clientId && clientData.full_name && clientData.email) {
+      // Step 1: Create client if new - Fix the UUID validation issue
+      if (selectedClientId === "new-client" || !selectedClientId) {
+        if (!clientData.full_name || !clientData.email) {
+          throw new Error('Nombre completo y email son requeridos para crear un cliente nuevo')
+        }
+        
         const { data: newClient, error: clientError } = await supabase
           .from('clients')
           .insert(clientData)
@@ -200,7 +203,7 @@ export default function NewSale() {
                 </Select>
               </div>
 
-              {(!selectedClientId || selectedClientId === "new-client") && (
+              {selectedClientId === "new-client" && (
                 <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
                   <h4 className="font-medium">Crear Nuevo Cliente</h4>
                   
@@ -331,7 +334,7 @@ export default function NewSale() {
 
               <div>
                 <Label htmlFor="payment_method">Método del Primer Pago</Label>
-                <Select value={firstPaymentMethod} onValueChange={(value: 'stripe' | 'crypto' | 'bank_transfer' | 'paypal') => setFirstPaymentMethod(value)}>
+                <Select value={firstPaymentMethod} onValueChange={(value) => setFirstPaymentMethod(value as 'stripe' | 'crypto' | 'bank_transfer' | 'paypal')}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -403,7 +406,7 @@ export default function NewSale() {
     }
   }
 
-  const canProceedToStep2 = selectedClientId || (clientData.full_name && clientData.email)
+  const canProceedToStep2 = selectedClientId === "new-client" ? (clientData.full_name && clientData.email) : selectedClientId
   const canSubmit = canProceedToStep2 && selectedPlanId
 
   return (

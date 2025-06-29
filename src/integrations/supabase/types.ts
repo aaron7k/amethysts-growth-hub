@@ -9,6 +9,79 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      alerts: {
+        Row: {
+          alert_type: Database["public"]["Enums"]["alert_type"]
+          client_id: string | null
+          created_at: string
+          id: string
+          installment_id: string | null
+          message: string
+          metadata: Json | null
+          sent_at: string | null
+          slack_channel: string
+          status: Database["public"]["Enums"]["alert_status"]
+          subscription_id: string | null
+          title: string
+          updated_at: string
+          webhook_url: string | null
+        }
+        Insert: {
+          alert_type: Database["public"]["Enums"]["alert_type"]
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          installment_id?: string | null
+          message: string
+          metadata?: Json | null
+          sent_at?: string | null
+          slack_channel: string
+          status?: Database["public"]["Enums"]["alert_status"]
+          subscription_id?: string | null
+          title: string
+          updated_at?: string
+          webhook_url?: string | null
+        }
+        Update: {
+          alert_type?: Database["public"]["Enums"]["alert_type"]
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          installment_id?: string | null
+          message?: string
+          metadata?: Json | null
+          sent_at?: string | null
+          slack_channel?: string
+          status?: Database["public"]["Enums"]["alert_status"]
+          subscription_id?: string | null
+          title?: string
+          updated_at?: string
+          webhook_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alerts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alerts_installment_id_fkey"
+            columns: ["installment_id"]
+            isOneToOne: false
+            referencedRelation: "installments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alerts_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           created_at: string | null
@@ -277,8 +350,26 @@ export type Database = {
         Args: { user_id: string } | { user_id: string; approver_id: string }
         Returns: undefined
       }
+      create_payment_overdue_alerts: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      create_renewal_upcoming_alerts: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      create_service_expired_alerts: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
+      alert_status: "pending" | "sent" | "failed"
+      alert_type:
+        | "payment_overdue"
+        | "renewal_upcoming"
+        | "service_expired"
+        | "new_sale"
       installment_status: "pending" | "paid" | "overdue"
       payment_method: "crypto" | "stripe" | "bank_transfer" | "paypal"
       plan_type: "core" | "renovation"
@@ -409,6 +500,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      alert_status: ["pending", "sent", "failed"],
+      alert_type: [
+        "payment_overdue",
+        "renewal_upcoming",
+        "service_expired",
+        "new_sale",
+      ],
       installment_status: ["pending", "paid", "overdue"],
       payment_method: ["crypto", "stripe", "bank_transfer", "paypal"],
       plan_type: ["core", "renovation"],

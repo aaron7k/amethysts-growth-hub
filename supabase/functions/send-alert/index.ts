@@ -1,0 +1,178 @@
+
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
+
+  try {
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
+    const { alertId } = await req.json()
+
+    if (!alertId) {
+      return new Response(
+        JSON.stringify({ error: 'alertId is required' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
+    // Obtener la alerta
+    const { data: alert, error: alertError } = await supabaseClient
+      .from('alerts')
+      .select('*')
+      .eq('id', alertId)
+      .single()
+
+    if (alertError || !alert) {
+      console.error('Error fetching alert:', alertError)
+      return new Response(
+        JSON.stringify({ error: 'Alert not found' }),
+        { 
+          status: 404, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
+    // Enviar a Slack (simulado - aquí integrarías con tu webhook de Slack)
+    const slackWebhook = Deno.env.get('SLACK_WEBHOOK_URL')
+    
+    if (slackWebhook) {
+      const slackMessage = {
+        channel: alert.slack_channel,
+        text: alert.message,
+        attachments: [
+          {
+            color: getAlertColor(alert.alert_type),
+            fields: [
+              {
+                title: "Tipo de Alerta",
+                value: getAlertTypeLabel(alert.alert_type),
+                short: true
+              },
+              {
+                title: "Fecha",
+                value: new Date(alert.created_at).toLocaleDateString('es-ES'),
+                short: true
+              }
+            ]
+          }
+        ]
+      }
+
+      const slackResponse = await fetch(slackWebhook, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(slackMessage)
+      })
+
+      if (!slackResponse.ok) {
+        throw new Error('Failed to send Slack message')
+      }
+    }
+
+    // Actualizar el estado de la alerta
+    const { error: updateError } = await supabaseClient
+      .from('alerts')
+      .update({ 
+        status: 'sent', 
+        sent_at: new Date().toISOString(),
+        webhook_url: slackWebhook || null
+      })
+      .eq('id', alertId)
+
+    if (updateError) {
+      console.error('Error updating alert:', updateError)
+      return new Response(
+        JSON.stringify({ error: 'Failed to update alert status' }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
+    console.log(`Alert ${alertId} sent successfully`)
+
+    return new Response(
+      JSON.stringify({ success: true, message: 'Alert sent successfully' }),
+      { 
+        status: 200, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    )
+
+  } catch (error) {
+    console.error('Error in send-alert function:', error)
+    
+    // Marcar la alerta como fallida si hay un alertId
+    try {
+      const { alertId } = await req.json()
+      if (alertId) {
+        const supabaseClient = createClient(
+          Deno.env.get('SUPABASE_URL') ?? '',
+          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+        )
+        
+        await supabaseClient
+          .from('alerts')
+          .update({ status: 'failed' })
+          .eq('id', alertId)
+      }
+    } catch (updateError) {
+      console.error('Error marking alert as failed:', updateError)
+    }
+
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    )
+  }
+})
+
+function getAlertColor(alertType: string): string {
+  switch (alertType) {
+    case 'payment_overdue':
+      return 'danger'
+    case 'renewal_upcoming':
+      return 'warning'
+    case 'service_expired':
+      return 'danger'
+    case 'new_sale':
+      return 'good'
+    default:
+      return 'warning'
+  }
+}
+
+function getAlertTypeLabel(alertType: string): string {
+  switch (alertType) {
+    case 'payment_overdue':
+      return 'Pago Retrasado'
+    case 'renewal_upcoming':
+      return 'Renovación Próxima'
+    case 'service_expired':
+      return 'Servicio Finalizado'
+    case 'new_sale':
+      return 'Nueva Venta'
+    default:
+      return alertType
+  }
+}

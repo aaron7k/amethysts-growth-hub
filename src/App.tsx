@@ -15,6 +15,7 @@ import ClientDetail from "./pages/ClientDetail";
 import Payments from "./pages/Payments";
 import NewSale from "./pages/NewSale";
 import Onboarding from "./pages/Onboarding";
+import Alerts from "./pages/Alerts";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -44,6 +45,7 @@ const App = () => (
                           <Route path="/payments" element={<Payments />} />
                           <Route path="/new-sale" element={<NewSale />} />
                           <Route path="/onboarding" element={<Onboarding />} />
+                          <Route path="/alerts" element={<Alerts />} />
                           <Route path="*" element={<NotFound />} />
                         </Routes>
                       </main>

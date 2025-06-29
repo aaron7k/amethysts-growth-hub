@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -63,16 +62,22 @@ const Accelerator = () => {
         .from('accelerator_programs')
         .select(`
           *,
-          subscriptions (
+          subscriptions!inner (
             client_id,
-            clients (full_name, phone_number, email),
-            plans (name)
+            clients!inner (
+              full_name,
+              phone_number,
+              email
+            ),
+            plans!inner (
+              name
+            )
           )
         `)
         .order('created_at', { ascending: false })
       
       if (error) throw error
-      return data as AcceleratorProgram[]
+      return data
     }
   })
 
@@ -84,13 +89,17 @@ const Accelerator = () => {
         .from('subscriptions')
         .select(`
           id,
-          clients (full_name),
-          plans (name)
+          clients!inner (full_name),
+          plans!inner (name)
         `)
         .eq('status', 'active')
         .eq('plans.plan_type', 'core')
         .ilike('plans.name', '%aceleradora%')
-        .is('accelerator_programs.subscription_id', null)
+        .not('id', 'in', `(
+          SELECT subscription_id 
+          FROM accelerator_programs 
+          WHERE status = 'active'
+        )`)
       
       if (error) throw error
       return data

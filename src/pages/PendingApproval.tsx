@@ -32,7 +32,8 @@ const PendingApproval = () => {
 
   const handleRetryLogin = async () => {
     await signOut();
-    // The user will be redirected to /auth automatically by the ProtectedRoute component
+    // Force a page reload to ensure clean state and redirect to auth
+    window.location.href = '/auth';
   };
 
   const handleSignOut = async () => {
@@ -64,7 +65,7 @@ const PendingApproval = () => {
 
           <div className="text-center space-y-4">
             <p className="text-sm text-muted-foreground">
-              ¿No has recibido respuesta? Puedes reenviar tu solicitud de aprobación o volver a intentar iniciar sesión.
+              ¿No has recibido respuesta? Puedes reenviar tu solicitud de aprobación o intentar con una cuenta diferente.
             </p>
             
             <div className="flex flex-col gap-3">
@@ -85,7 +86,7 @@ const PendingApproval = () => {
                 className="w-full"
               >
                 <LogIn className="mr-2 h-4 w-4" />
-                Volver a intentar iniciar sesión
+                Intentar con otra cuenta
               </Button>
               
               <Button

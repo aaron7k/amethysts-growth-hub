@@ -136,6 +136,7 @@ const Auth = () => {
                     type="email"
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
+                    autoComplete="email"
                     required
                   />
                 </div>
@@ -146,6 +147,7 @@ const Auth = () => {
                     type="password"
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
+                    autoComplete="off"
                     required
                   />
                 </div>
@@ -170,6 +172,7 @@ const Auth = () => {
                     type="text"
                     value={signupFullName}
                     onChange={(e) => setSignupFullName(e.target.value)}
+                    autoComplete="name"
                     required
                   />
                 </div>
@@ -180,6 +183,7 @@ const Auth = () => {
                     type="email"
                     value={signupEmail}
                     onChange={(e) => setSignupEmail(e.target.value)}
+                    autoComplete="email"
                     required
                   />
                 </div>
@@ -190,6 +194,7 @@ const Auth = () => {
                     type="password"
                     value={signupPassword}
                     onChange={(e) => setSignupPassword(e.target.value)}
+                    autoComplete="new-password"
                     required
                     minLength={6}
                   />

@@ -2,6 +2,7 @@
 import { useState } from "react"
 import { Home, Users, CreditCard, Plus, UserCheck, Settings } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 import {
   Sidebar,
@@ -27,6 +28,7 @@ const mainItems = [
 export function AppSidebar() {
   const { state } = useSidebar()
   const location = useLocation()
+  const isMobile = useIsMobile()
   const currentPath = location.pathname
   const collapsed = state === "collapsed"
 
@@ -43,15 +45,19 @@ export function AppSidebar() {
       : "hover:bg-accent hover:text-accent-foreground transition-colors"
 
   return (
-    <Sidebar className={`${collapsed ? "w-16" : "w-64"} border-r border-border bg-card`} collapsible="icon">
-      <SidebarHeader className="border-b border-border p-4">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-sm">IG</span>
+    <Sidebar 
+      className={`${collapsed ? "w-16" : "w-64"} border-r border-border bg-card`} 
+      collapsible="icon"
+      variant={isMobile ? "floating" : "sidebar"}
+    >
+      <SidebarHeader className="border-b border-border p-3 sm:p-4">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="w-7 h-7 sm:w-8 sm:h-8 bg-primary rounded-lg flex items-center justify-center">
+            <span className="text-primary-foreground font-bold text-xs sm:text-sm">IG</span>
           </div>
           {!collapsed && (
             <div>
-              <h2 className="text-lg font-semibold">InfraGrowth</h2>
+              <h2 className="text-base sm:text-lg font-semibold">InfraGrowth</h2>
               <p className="text-xs text-muted-foreground">CRM Sistema</p>
             </div>
           )}
@@ -67,13 +73,13 @@ export function AppSidebar() {
             <SidebarMenu className="space-y-1">
               {mainItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild className="h-10">
+                  <SidebarMenuButton asChild className="h-9 sm:h-10">
                     <NavLink 
                       to={item.url} 
-                      className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 ${getNavCls(item.url)}`}
+                      className={`flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2 rounded-lg transition-all duration-200 ${getNavCls(item.url)}`}
                     >
-                      <item.icon className={`h-5 w-5 ${collapsed ? "mx-auto" : ""}`} />
-                      {!collapsed && <span className="font-medium">{item.title}</span>}
+                      <item.icon className={`h-4 w-4 sm:h-5 sm:w-5 ${collapsed ? "mx-auto" : ""}`} />
+                      {!collapsed && <span className="font-medium text-sm sm:text-base">{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

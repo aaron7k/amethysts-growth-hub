@@ -24,22 +24,27 @@ export function TopNavigation() {
     : user?.email?.slice(0, 2).toUpperCase() || 'U';
 
   return (
-    <header className="h-16 border-b border-border bg-background flex items-center justify-between px-6">
-      <div className="flex items-center gap-4">
+    <header className="h-14 sm:h-16 border-b border-border bg-background flex items-center justify-between px-4 sm:px-6">
+      <div className="flex items-center gap-2 sm:gap-4">
         <SidebarTrigger className="h-8 w-8" />
-        <div className="relative">
+        <div className="relative hidden sm:block">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 
             placeholder="Buscar clientes, pagos..." 
-            className="pl-10 w-80 bg-muted/50"
+            className="pl-10 w-60 sm:w-80 bg-muted/50"
           />
         </div>
       </div>
       
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 sm:gap-4">
+        {/* Mobile search button */}
+        <Button variant="ghost" size="icon" className="sm:hidden">
+          <Search className="h-5 w-5" />
+        </Button>
+        
         <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          <span className="absolute -top-1 -right-1 h-4 w-4 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center">
+          <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
+          <span className="absolute -top-1 -right-1 h-3 w-3 sm:h-4 sm:w-4 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center">
             3
           </span>
         </Button>
@@ -56,8 +61,8 @@ export function TopNavigation() {
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56" align="end" forceMount>
             <DropdownMenuItem className="flex-col items-start">
-              <div className="font-medium">{user?.user_metadata?.full_name || 'Usuario'}</div>
-              <div className="text-xs text-muted-foreground">{user?.email}</div>
+              <div className="font-medium text-sm">{user?.user_metadata?.full_name || 'Usuario'}</div>
+              <div className="text-xs text-muted-foreground truncate w-full">{user?.email}</div>
             </DropdownMenuItem>
             <DropdownMenuItem>
               <User className="mr-2 h-4 w-4" />

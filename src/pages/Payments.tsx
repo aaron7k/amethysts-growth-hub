@@ -108,30 +108,30 @@ export default function Payments() {
   const totals = getTotalsByStatus()
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-            <CreditCard className="h-8 w-8 text-primary" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2 sm:gap-3">
+            <CreditCard className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
             Gestión de Pagos
           </h1>
-          <p className="text-muted-foreground mt-2">
+          <p className="text-muted-foreground mt-2 text-sm sm:text-base">
             Administra todas las cuotas y pagos del sistema
           </p>
         </div>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card className="border-l-4 border-l-yellow-500">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
               Pagos Pendientes
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">
+            <div className="text-xl sm:text-2xl font-bold text-foreground">
               {totals.pending}
             </div>
           </CardContent>
@@ -139,12 +139,12 @@ export default function Payments() {
 
         <Card className="border-l-4 border-l-red-500">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
               Pagos Atrasados
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">
+            <div className="text-xl sm:text-2xl font-bold text-foreground">
               {totals.overdue}
             </div>
           </CardContent>
@@ -152,25 +152,25 @@ export default function Payments() {
 
         <Card className="border-l-4 border-l-green-500">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
               Pagos Completados
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">
+            <div className="text-xl sm:text-2xl font-bold text-foreground">
               {totals.paid}
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-primary">
+        <Card className="border-l-4 border-l-primary col-span-2 lg:col-span-1">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
               Monto Pendiente
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-primary">
+            <div className="text-xl sm:text-2xl font-bold text-primary">
               ${totals.totalAmount.toFixed(2)}
             </div>
           </CardContent>
@@ -180,13 +180,13 @@ export default function Payments() {
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+            <Filter className="h-4 w-4 sm:h-5 sm:w-5" />
             Filtros y Búsqueda
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input 
@@ -214,104 +214,108 @@ export default function Payments() {
       {/* Payments Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Lista de Cuotas</CardTitle>
+          <CardTitle className="text-lg sm:text-xl">Lista de Cuotas</CardTitle>
           <CardDescription>
             {installments?.length || 0} cuota(s) encontrada(s)
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0 sm:p-6">
           {isLoading ? (
             <div className="flex justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Plan</TableHead>
-                  <TableHead>Cuota</TableHead>
-                  <TableHead>Monto</TableHead>
-                  <TableHead>Vencimiento</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Método de Pago</TableHead>
-                  <TableHead>Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {installments?.length === 0 ? (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                      No se encontraron cuotas
-                    </TableCell>
+                    <TableHead className="min-w-[150px]">Cliente</TableHead>
+                    <TableHead className="min-w-[120px] hidden sm:table-cell">Plan</TableHead>
+                    <TableHead className="min-w-[80px]">Cuota</TableHead>
+                    <TableHead className="min-w-[100px]">Monto</TableHead>
+                    <TableHead className="min-w-[110px] hidden md:table-cell">Vencimiento</TableHead>
+                    <TableHead className="min-w-[100px]">Estado</TableHead>
+                    <TableHead className="min-w-[120px] hidden lg:table-cell">Método de Pago</TableHead>
+                    <TableHead className="min-w-[140px]">Acciones</TableHead>
                   </TableRow>
-                ) : (
-                  installments?.map((installment) => (
-                    <TableRow key={installment.id} className="hover:bg-muted/50">
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">
-                            {installment.subscriptions?.clients?.full_name}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {installment.subscriptions?.clients?.email}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">
-                            {installment.subscriptions?.plans?.name}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {installment.subscriptions?.plans?.plan_type}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        Cuota {installment.installment_number}
-                      </TableCell>
-                      <TableCell className="font-semibold text-primary">
-                        ${installment.amount_usd}
-                      </TableCell>
-                      <TableCell>
-                        {new Date(installment.due_date).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={getStatusColor(installment.status || '')}>
-                          {installment.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {installment.payment_method || '-'}
-                      </TableCell>
-                      <TableCell>
-                        {installment.status === 'pending' || installment.status === 'overdue' ? (
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              onClick={() => markAsPaidMutation.mutate({
-                                installmentId: installment.id,
-                                paymentMethod: 'stripe' as PaymentMethod
-                              })}
-                              disabled={markAsPaidMutation.isPending}
-                              className="bg-green-600 hover:bg-green-700"
-                            >
-                              <CheckCircle className="h-3 w-3 mr-1" />
-                              Marcar Pagado
-                            </Button>
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground text-sm">
-                            Pagado el {installment.payment_date ? new Date(installment.payment_date).toLocaleDateString() : '-'}
-                          </span>
-                        )}
+                </TableHeader>
+                <TableBody>
+                  {installments?.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                        No se encontraron cuotas
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : (
+                    installments?.map((installment) => (
+                      <TableRow key={installment.id} className="hover:bg-muted/50">
+                        <TableCell>
+                          <div>
+                            <div className="font-medium text-sm sm:text-base">
+                              {installment.subscriptions?.clients?.full_name}
+                            </div>
+                            <div className="text-xs sm:text-sm text-muted-foreground block sm:hidden lg:block">
+                              {installment.subscriptions?.clients?.email}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell">
+                          <div>
+                            <div className="font-medium text-sm">
+                              {installment.subscriptions?.plans?.name}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {installment.subscriptions?.plans?.plan_type}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          Cuota {installment.installment_number}
+                        </TableCell>
+                        <TableCell className="font-semibold text-primary text-sm sm:text-base">
+                          ${installment.amount_usd}
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell text-sm">
+                          {new Date(installment.due_date).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={`${getStatusColor(installment.status || '')} text-xs`}>
+                            {installment.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell text-sm">
+                          {installment.payment_method || '-'}
+                        </TableCell>
+                        <TableCell>
+                          {installment.status === 'pending' || installment.status === 'overdue' ? (
+                            <div className="flex gap-1 sm:gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => markAsPaidMutation.mutate({
+                                  installmentId: installment.id,
+                                  paymentMethod: 'stripe' as PaymentMethod
+                                })}
+                                disabled={markAsPaidMutation.isPending}
+                                className="bg-green-600 hover:bg-green-700 text-xs sm:text-sm px-2 sm:px-4"
+                              >
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                <span className="hidden sm:inline">Marcar Pagado</span>
+                                <span className="sm:hidden">Pagado</span>
+                              </Button>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-xs sm:text-sm">
+                              <span className="hidden sm:inline">Pagado el </span>
+                              {installment.payment_date ? new Date(installment.payment_date).toLocaleDateString() : '-'}
+                            </span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>

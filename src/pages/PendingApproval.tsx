@@ -4,13 +4,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Clock, RefreshCw, LogIn, RotateCcw } from 'lucide-react';
+import { Loader2, Clock, RefreshCw, LogIn } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 
 const PendingApproval = () => {
   const { user, signOut, retryApproval } = useAuth();
   const [isRetrying, setIsRetrying] = useState(false);
-  const [isRetryingLogin, setIsRetryingLogin] = useState(false);
 
   const handleRetryApproval = async () => {
     setIsRetrying(true);
@@ -32,22 +31,8 @@ const PendingApproval = () => {
   };
 
   const handleRetryLogin = async () => {
-    setIsRetryingLogin(true);
-    
-    // Sign out and then try to sign back in to refresh the session
     await signOut();
-    
-    // Small delay to ensure clean state
-    setTimeout(() => {
-      // Redirect to auth page to retry login
-      window.location.href = '/auth';
-    }, 100);
-  };
-
-  const handleTryDifferentAccount = async () => {
-    await signOut();
-    // Force a page reload to ensure clean state and redirect to auth
-    window.location.href = '/auth';
+    // The user will be redirected to /auth automatically by the ProtectedRoute component
   };
 
   const handleSignOut = async () => {
@@ -79,7 +64,7 @@ const PendingApproval = () => {
 
           <div className="text-center space-y-4">
             <p className="text-sm text-muted-foreground">
-              ¿No has recibido respuesta? Puedes reenviar tu solicitud, reintentar el login si ya fuiste aprobado, o intentar con una cuenta diferente.
+              ¿No has recibido respuesta? Puedes reenviar tu solicitud de aprobación o volver a intentar iniciar sesión.
             </p>
             
             <div className="flex flex-col gap-3">
@@ -96,22 +81,11 @@ const PendingApproval = () => {
               
               <Button
                 onClick={handleRetryLogin}
-                disabled={isRetryingLogin}
-                variant="secondary"
-                className="w-full"
-              >
-                {isRetryingLogin && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {!isRetryingLogin && <RotateCcw className="mr-2 h-4 w-4" />}
-                Volver a intentar iniciar sesión
-              </Button>
-              
-              <Button
-                onClick={handleTryDifferentAccount}
                 variant="default"
                 className="w-full"
               >
                 <LogIn className="mr-2 h-4 w-4" />
-                Intentar con otra cuenta
+                Volver a intentar iniciar sesión
               </Button>
               
               <Button

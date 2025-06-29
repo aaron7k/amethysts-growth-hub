@@ -271,7 +271,7 @@ export type Database = {
     }
     Functions: {
       approve_user: {
-        Args: { user_id: string; approver_id: string }
+        Args: { user_id: string } | { user_id: string; approver_id: string }
         Returns: undefined
       }
     }

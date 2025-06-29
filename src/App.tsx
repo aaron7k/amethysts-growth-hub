@@ -5,6 +5,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { AuthProvider } from "@/hooks/useAuth";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import { AppSidebar } from "@/components/AppSidebar";
 import { TopNavigation } from "@/components/TopNavigation";
 import Dashboard from "./pages/Dashboard";
@@ -13,6 +15,7 @@ import ClientDetail from "./pages/ClientDetail";
 import Payments from "./pages/Payments";
 import NewSale from "./pages/NewSale";
 import Onboarding from "./pages/Onboarding";
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,25 +26,34 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <SidebarProvider>
-          <div className="min-h-screen flex w-full bg-background">
-            <AppSidebar />
-            <div className="flex-1 flex flex-col">
-              <TopNavigation />
-              <main className="flex-1 p-6">
-                <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/clients" element={<Clients />} />
-                  <Route path="/clients/:id" element={<ClientDetail />} />
-                  <Route path="/payments" element={<Payments />} />
-                  <Route path="/new-sale" element={<NewSale />} />
-                  <Route path="/onboarding" element={<Onboarding />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </main>
-            </div>
-          </div>
-        </SidebarProvider>
+        <AuthProvider>
+          <Routes>
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/*" element={
+              <ProtectedRoute>
+                <SidebarProvider>
+                  <div className="min-h-screen flex w-full bg-background">
+                    <AppSidebar />
+                    <div className="flex-1 flex flex-col">
+                      <TopNavigation />
+                      <main className="flex-1 p-6">
+                        <Routes>
+                          <Route path="/" element={<Dashboard />} />
+                          <Route path="/clients" element={<Clients />} />
+                          <Route path="/clients/:id" element={<ClientDetail />} />
+                          <Route path="/payments" element={<Payments />} />
+                          <Route path="/new-sale" element={<NewSale />} />
+                          <Route path="/onboarding" element={<Onboarding />} />
+                          <Route path="*" element={<NotFound />} />
+                        </Routes>
+                      </main>
+                    </div>
+                  </div>
+                </SidebarProvider>
+              </ProtectedRoute>
+            } />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

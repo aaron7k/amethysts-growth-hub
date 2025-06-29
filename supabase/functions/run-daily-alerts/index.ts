@@ -44,10 +44,18 @@ serve(async (req) => {
       console.log('Service expired alerts created successfully')
     }
 
+    // Ejecutar función para cambios de etapa de aceleradora
+    const { error: stageError } = await supabaseClient.rpc('check_accelerator_stage_changes')
+    if (stageError) {
+      console.error('Error checking accelerator stage changes:', stageError)
+    } else {
+      console.log('Accelerator stage changes checked successfully')
+    }
+
     // Obtener todas las alertas pendientes y enviarlas automáticamente
     const { data: pendingAlerts, error: fetchError } = await supabaseClient
       .from('alerts')
-      .select('id')
+      .select('id, alert_type')
       .eq('status', 'pending')
       .order('created_at', { ascending: true })
 
@@ -59,14 +67,19 @@ serve(async (req) => {
       // Enviar cada alerta pendiente
       for (const alert of pendingAlerts) {
         try {
-          const { error } = await supabaseClient.functions.invoke('send-alert', {
+          // Determinar qué función usar según el tipo de alerta
+          const functionName = (alert.alert_type === 'stage_change' || alert.alert_type === 'stage_overdue') 
+            ? 'send-stage-change-alert' 
+            : 'send-alert'
+          
+          const { error } = await supabaseClient.functions.invoke(functionName, {
             body: { alertId: alert.id }
           })
           
           if (error) {
             console.error(`Error sending alert ${alert.id}:`, error)
           } else {
-            console.log(`Alert ${alert.id} sent successfully`)
+            console.log(`Alert ${alert.id} sent successfully using ${functionName}`)
           }
         } catch (sendError) {
           console.error(`Error sending alert ${alert.id}:`, sendError)

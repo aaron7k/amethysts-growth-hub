@@ -9,6 +9,87 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      accelerator_programs: {
+        Row: {
+          created_at: string
+          current_stage: number
+          goal_reached: boolean | null
+          goal_reached_date: string | null
+          id: string
+          program_end_date: string
+          program_start_date: string
+          status: string
+          subscription_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_stage?: number
+          goal_reached?: boolean | null
+          goal_reached_date?: string | null
+          id?: string
+          program_end_date: string
+          program_start_date: string
+          status?: string
+          subscription_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_stage?: number
+          goal_reached?: boolean | null
+          goal_reached_date?: string | null
+          id?: string
+          program_end_date?: string
+          program_start_date?: string
+          status?: string
+          subscription_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      accelerator_stages: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          end_date: string
+          id: string
+          notes: string | null
+          stage_name: string
+          stage_number: number
+          start_date: string
+          status: string
+          subscription_id: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          end_date: string
+          id?: string
+          notes?: string | null
+          stage_name: string
+          stage_number: number
+          start_date: string
+          status?: string
+          subscription_id: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          end_date?: string
+          id?: string
+          notes?: string | null
+          stage_name?: string
+          stage_number?: number
+          start_date?: string
+          status?: string
+          subscription_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       alerts: {
         Row: {
           alert_type: Database["public"]["Enums"]["alert_type"]
@@ -350,6 +431,10 @@ export type Database = {
         Args: { user_id: string } | { user_id: string; approver_id: string }
         Returns: undefined
       }
+      check_accelerator_stage_changes: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       create_payment_overdue_alerts: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -370,6 +455,8 @@ export type Database = {
         | "renewal_upcoming"
         | "service_expired"
         | "new_sale"
+        | "stage_change"
+        | "stage_overdue"
       installment_status: "pending" | "paid" | "overdue"
       payment_method: "crypto" | "stripe" | "bank_transfer" | "paypal"
       plan_type: "core" | "renovation"
@@ -506,6 +593,8 @@ export const Constants = {
         "renewal_upcoming",
         "service_expired",
         "new_sale",
+        "stage_change",
+        "stage_overdue",
       ],
       installment_status: ["pending", "paid", "overdue"],
       payment_method: ["crypto", "stripe", "bank_transfer", "paypal"],

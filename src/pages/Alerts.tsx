@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { AlertCircle, Clock, CheckCircle, XCircle } from "lucide-react"
+import { AlertCircle, Clock, CheckCircle, XCircle, Zap, TrendingUp } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 
 const Alerts = () => {
@@ -26,17 +26,26 @@ const Alerts = () => {
     }
   })
 
-  const sendAlert = async (alertId: string) => {
+  const sendAlert = async (alertId: string, alertType: string) => {
     try {
-      const { error } = await supabase.functions.invoke('send-alert', {
+      // Determinar qué función usar según el tipo de alerta
+      const functionName = (alertType === 'stage_change' || alertType === 'stage_overdue') 
+        ? 'send-stage-change-alert' 
+        : 'send-alert'
+      
+      const { error } = await supabase.functions.invoke(functionName, {
         body: { alertId }
       })
       
       if (error) throw error
       
+      const webhookType = (alertType === 'stage_change' || alertType === 'stage_overdue') 
+        ? 'cambio-etapa' 
+        : 'alerts'
+      
       toast({
         title: "Alerta enviada",
-        description: "La alerta se ha enviado correctamente al webhook de n8n"
+        description: `La alerta se ha enviado correctamente al webhook de ${webhookType}`
       })
       
       refetch()
@@ -59,6 +68,10 @@ const Alerts = () => {
         return <AlertCircle className="h-5 w-5 text-orange-500" />
       case 'new_sale':
         return <CheckCircle className="h-5 w-5 text-green-500" />
+      case 'stage_change':
+        return <TrendingUp className="h-5 w-5 text-blue-500" />
+      case 'stage_overdue':
+        return <Zap className="h-5 w-5 text-red-600" />
       default:
         return <AlertCircle className="h-5 w-5" />
     }
@@ -74,6 +87,10 @@ const Alerts = () => {
         return 'Servicio Finalizado'
       case 'new_sale':
         return 'Nueva Venta'
+      case 'stage_change':
+        return 'Cambio de Etapa'
+      case 'stage_overdue':
+        return 'Etapa Atrasada'
       default:
         return type
     }
@@ -133,7 +150,7 @@ const Alerts = () => {
                   </p>
                 </div>
                 <div>
-                  <p className="font-medium">Canal Slack</p>
+                  <p className="font-medium">Canal</p>
                   <p className="text-muted-foreground">{alert.slack_channel}</p>
                 </div>
                 <div>
@@ -162,7 +179,7 @@ const Alerts = () => {
               {alert.status === 'pending' && (
                 <div className="mt-4 flex justify-end">
                   <Button 
-                    onClick={() => sendAlert(alert.id)}
+                    onClick={() => sendAlert(alert.id, alert.alert_type)}
                     size="sm"
                   >
                     Enviar a n8n

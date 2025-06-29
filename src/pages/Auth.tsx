@@ -23,6 +23,7 @@ const Auth = () => {
   // Signup form state
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
+  const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
   const [signupFullName, setSignupFullName] = useState('');
   const [signupSuccess, setSignupSuccess] = useState(false);
 
@@ -61,6 +62,18 @@ const Auth = () => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+
+    // Validate password confirmation
+    if (signupPassword !== signupConfirmPassword) {
+      setError('Las contraseñas no coinciden');
+      toast({
+        title: "Error de registro",
+        description: "Las contraseñas no coinciden",
+        variant: "destructive"
+      });
+      setIsLoading(false);
+      return;
+    }
 
     const { error } = await signUp(signupEmail, signupPassword, signupFullName);
     
@@ -194,6 +207,18 @@ const Auth = () => {
                     type="password"
                     value={signupPassword}
                     onChange={(e) => setSignupPassword(e.target.value)}
+                    autoComplete="new-password"
+                    required
+                    minLength={6}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signupConfirmPassword">Confirmar contraseña</Label>
+                  <Input
+                    id="signupConfirmPassword"
+                    type="password"
+                    value={signupConfirmPassword}
+                    onChange={(e) => setSignupConfirmPassword(e.target.value)}
                     autoComplete="new-password"
                     required
                     minLength={6}

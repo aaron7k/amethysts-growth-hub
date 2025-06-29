@@ -58,6 +58,7 @@ const Accelerator = () => {
   const { data: programs, isLoading: programsLoading } = useQuery({
     queryKey: ['accelerator-programs'],
     queryFn: async () => {
+      console.log('Fetching accelerator programs...')
       const { data, error } = await supabase
         .from('accelerator_programs')
         .select(`
@@ -76,15 +77,20 @@ const Accelerator = () => {
         `)
         .order('created_at', { ascending: false })
       
-      if (error) throw error
+      if (error) {
+        console.error('Error fetching accelerator programs:', error)
+        throw error
+      }
+      console.log('Accelerator programs fetched:', data)
       return data as AcceleratorProgram[]
     }
   })
 
-  // Obtener suscripciones activas de tipo aceleradora
-  const { data: availableSubscriptions } = useQuery({
-    queryKey: ['accelerator-subscriptions'],
+  // Obtener TODAS las suscripciones activas - sin filtrar por nombre de plan
+  const { data: availableSubscriptions, isLoading: subscriptionsLoading } = useQuery({
+    queryKey: ['available-subscriptions'],
     queryFn: async () => {
+      console.log('Fetching available subscriptions...')
       const { data, error } = await supabase
         .from('subscriptions')
         .select(`
@@ -93,15 +99,17 @@ const Accelerator = () => {
           plans!inner (name)
         `)
         .eq('status', 'active')
-        .eq('plans.plan_type', 'core')
-        .ilike('plans.name', '%aceleradora%')
         .not('id', 'in', `(
           SELECT subscription_id 
           FROM accelerator_programs 
           WHERE status = 'active'
         )`)
       
-      if (error) throw error
+      if (error) {
+        console.error('Error fetching available subscriptions:', error)
+        throw error
+      }
+      console.log('Available subscriptions:', data)
       return data
     }
   })
@@ -112,13 +120,18 @@ const Accelerator = () => {
     queryFn: async () => {
       if (!selectedProgram) return []
       
+      console.log('Fetching stages for program:', selectedProgram)
       const { data, error } = await supabase
         .from('accelerator_stages')
         .select('*')
         .eq('subscription_id', selectedProgram)
         .order('stage_number')
       
-      if (error) throw error
+      if (error) {
+        console.error('Error fetching accelerator stages:', error)
+        throw error
+      }
+      console.log('Stages fetched:', data)
       return data as AcceleratorStage[]
     },
     enabled: !!selectedProgram
@@ -127,6 +140,7 @@ const Accelerator = () => {
   // Crear nuevo programa
   const createProgramMutation = useMutation({
     mutationFn: async ({ subscriptionId, startDate }: { subscriptionId: string, startDate: string }) => {
+      console.log('Creating program for subscription:', subscriptionId, 'start date:', startDate)
       const endDate = new Date(startDate)
       endDate.setDate(endDate.getDate() + 120)
       
@@ -138,11 +152,15 @@ const Accelerator = () => {
           program_end_date: endDate.toISOString().split('T')[0]
         })
       
-      if (error) throw error
+      if (error) {
+        console.error('Error creating program:', error)
+        throw error
+      }
+      console.log('Program created successfully')
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accelerator-programs'] })
-      queryClient.invalidateQueries({ queryKey: ['accelerator-subscriptions'] })
+      queryClient.invalidateQueries({ queryKey: ['available-subscriptions'] })
       setNewProgramOpen(false)
       setSelectedSubscription("")
       setStartDate("")
@@ -151,7 +169,8 @@ const Accelerator = () => {
         description: "El programa de aceleradora se ha creado exitosamente"
       })
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Failed to create program:', error)
       toast({
         title: "Error",
         description: "No se pudo crear el programa",
@@ -282,18 +301,27 @@ const Accelerator = () => {
             <div className="space-y-4">
               <div>
                 <Label htmlFor="subscription">Cliente</Label>
-                <Select value={selectedSubscription} onValueChange={setSelectedSubscription}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar cliente" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableSubscriptions?.map((sub) => (
-                      <SelectItem key={sub.id} value={sub.id}>
-                        {sub.clients?.full_name} - {sub.plans?.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {subscriptionsLoading ? (
+                  <div className="text-sm text-muted-foreground">Cargando clientes...</div>
+                ) : (
+                  <Select value={selectedSubscription} onValueChange={setSelectedSubscription}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar cliente" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableSubscriptions?.map((sub) => (
+                        <SelectItem key={sub.id} value={sub.id}>
+                          {sub.clients?.full_name} - {sub.plans?.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                {availableSubscriptions?.length === 0 && !subscriptionsLoading && (
+                  <div className="text-sm text-muted-foreground mt-2">
+                    No hay suscripciones disponibles para crear programas
+                  </div>
+                )}
               </div>
               <div>
                 <Label htmlFor="start-date">Fecha de Inicio</Label>
@@ -309,10 +337,10 @@ const Accelerator = () => {
                   subscriptionId: selectedSubscription, 
                   startDate 
                 })}
-                disabled={!selectedSubscription || !startDate}
+                disabled={!selectedSubscription || !startDate || createProgramMutation.isPending}
                 className="w-full"
               >
-                Crear Programa
+                {createProgramMutation.isPending ? 'Creando...' : 'Crear Programa'}
               </Button>
             </div>
           </DialogContent>

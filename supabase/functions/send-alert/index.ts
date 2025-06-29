@@ -48,41 +48,32 @@ serve(async (req) => {
       )
     }
 
-    // Enviar a Slack (simulado - aquí integrarías con tu webhook de Slack)
-    const slackWebhook = Deno.env.get('SLACK_WEBHOOK_URL')
+    // Enviar a n8n webhook
+    const n8nWebhook = 'https://hooks.infragrowthai.com/webhook/client/alerts'
     
-    if (slackWebhook) {
-      const slackMessage = {
-        channel: alert.slack_channel,
-        text: alert.message,
-        attachments: [
-          {
-            color: getAlertColor(alert.alert_type),
-            fields: [
-              {
-                title: "Tipo de Alerta",
-                value: getAlertTypeLabel(alert.alert_type),
-                short: true
-              },
-              {
-                title: "Fecha",
-                value: new Date(alert.created_at).toLocaleDateString('es-ES'),
-                short: true
-              }
-            ]
-          }
-        ]
-      }
+    const webhookPayload = {
+      alert_id: alert.id,
+      alert_type: alert.alert_type,
+      title: alert.title,
+      message: alert.message,
+      slack_channel: alert.slack_channel,
+      client_id: alert.client_id,
+      subscription_id: alert.subscription_id,
+      installment_id: alert.installment_id,
+      metadata: alert.metadata,
+      created_at: alert.created_at,
+      color: getAlertColor(alert.alert_type),
+      type_label: getAlertTypeLabel(alert.alert_type)
+    }
 
-      const slackResponse = await fetch(slackWebhook, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(slackMessage)
-      })
+    const webhookResponse = await fetch(n8nWebhook, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(webhookPayload)
+    })
 
-      if (!slackResponse.ok) {
-        throw new Error('Failed to send Slack message')
-      }
+    if (!webhookResponse.ok) {
+      throw new Error(`n8n webhook failed with status: ${webhookResponse.status}`)
     }
 
     // Actualizar el estado de la alerta
@@ -91,7 +82,7 @@ serve(async (req) => {
       .update({ 
         status: 'sent', 
         sent_at: new Date().toISOString(),
-        webhook_url: slackWebhook || null
+        webhook_url: n8nWebhook
       })
       .eq('id', alertId)
 
@@ -106,10 +97,10 @@ serve(async (req) => {
       )
     }
 
-    console.log(`Alert ${alertId} sent successfully`)
+    console.log(`Alert ${alertId} sent successfully to n8n webhook`)
 
     return new Response(
-      JSON.stringify({ success: true, message: 'Alert sent successfully' }),
+      JSON.stringify({ success: true, message: 'Alert sent successfully to n8n' }),
       { 
         status: 200, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }

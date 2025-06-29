@@ -36,7 +36,7 @@ const Alerts = () => {
       
       toast({
         title: "Alerta enviada",
-        description: "La alerta se ha enviado correctamente a Slack"
+        description: "La alerta se ha enviado correctamente al webhook de n8n"
       })
       
       refetch()
@@ -101,7 +101,7 @@ const Alerts = () => {
       <div className="mb-6">
         <h1 className="text-3xl font-bold">Gestión de Alertas</h1>
         <p className="text-muted-foreground">
-          Monitor y gestiona todas las alertas automáticas del sistema
+          Monitor y gestiona todas las alertas automáticas del sistema (envío a n8n webhook)
         </p>
       </div>
 
@@ -165,7 +165,7 @@ const Alerts = () => {
                     onClick={() => sendAlert(alert.id)}
                     size="sm"
                   >
-                    Enviar a Slack
+                    Enviar a n8n
                   </Button>
                 </div>
               )}

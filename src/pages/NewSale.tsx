@@ -1,3 +1,4 @@
+
 import { useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "react-router-dom"
@@ -64,6 +65,7 @@ export default function NewSale() {
   const createSaleMutation = useMutation({
     mutationFn: async () => {
       let clientId = selectedClientId
+      let clientInfo = null
 
       // Step 1: Create client if new - Fix the UUID validation issue
       if (selectedClientId === "new-client" || !selectedClientId) {
@@ -79,6 +81,17 @@ export default function NewSale() {
 
         if (clientError) throw clientError
         clientId = newClient.id
+        clientInfo = newClient
+      } else {
+        // Get existing client info
+        const { data: existingClient, error: clientError } = await supabase
+          .from('clients')
+          .select('*')
+          .eq('id', selectedClientId)
+          .single()
+
+        if (clientError) throw clientError
+        clientInfo = existingClient
       }
 
       if (!clientId || !selectedPlanId) {
@@ -138,11 +151,48 @@ export default function NewSale() {
         })
       }
 
-      const { error: installmentsError } = await supabase
+      const { data: createdInstallments, error: installmentsError } = await supabase
         .from('installments')
         .insert(installments)
+        .select()
 
       if (installmentsError) throw installmentsError
+
+      // Step 4: Send onboarding webhook with all data
+      const webhookData = {
+        client: clientInfo,
+        subscription: subscription,
+        plan: selectedPlan,
+        installments: createdInstallments,
+        onboarding: {
+          next_step: 'pending_onboarding',
+          call_level_included: callLevelIncluded,
+          notes: notes,
+          created_at: new Date().toISOString()
+        }
+      }
+
+      console.log('Sending onboarding webhook:', webhookData)
+
+      try {
+        const webhookResponse = await fetch('https://hooks.infragrowthai.com/webhook/client/onboarding', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(webhookData)
+        })
+
+        if (!webhookResponse.ok) {
+          console.error('Webhook failed:', await webhookResponse.text())
+          throw new Error('Failed to send onboarding webhook')
+        }
+
+        console.log('Onboarding webhook sent successfully')
+      } catch (webhookError) {
+        console.error('Error sending onboarding webhook:', webhookError)
+        throw new Error('Failed to send onboarding webhook')
+      }
 
       return { clientId, subscriptionId: subscription.id }
     },

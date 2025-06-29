@@ -10,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
+import PhoneInput from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 
 const Auth = () => {
   const { user, signIn, signUp, loading } = useAuth();
@@ -25,6 +27,7 @@ const Auth = () => {
   const [signupPassword, setSignupPassword] = useState('');
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
   const [signupFullName, setSignupFullName] = useState('');
+  const [signupPhone, setSignupPhone] = useState('');
   const [signupSuccess, setSignupSuccess] = useState(false);
 
   if (loading) {
@@ -75,7 +78,7 @@ const Auth = () => {
       return;
     }
 
-    const { error } = await signUp(signupEmail, signupPassword, signupFullName);
+    const { error } = await signUp(signupEmail, signupPassword, signupFullName, signupPhone);
     
     if (error) {
       setError(error.message);
@@ -198,6 +201,17 @@ const Auth = () => {
                     onChange={(e) => setSignupEmail(e.target.value)}
                     autoComplete="email"
                     required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signupPhone">Teléfono</Label>
+                  <PhoneInput
+                    id="signupPhone"
+                    value={signupPhone}
+                    onChange={setSignupPhone}
+                    defaultCountry="MX"
+                    placeholder="Ingresa tu número de teléfono"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   />
                 </div>
                 <div className="space-y-2">

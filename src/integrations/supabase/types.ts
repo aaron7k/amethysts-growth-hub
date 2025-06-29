@@ -9,6 +9,53 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      accelerator_checklist_progress: {
+        Row: {
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          id: string
+          is_completed: boolean | null
+          notes: string | null
+          stage_number: number
+          subscription_id: string
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          id?: string
+          is_completed?: boolean | null
+          notes?: string | null
+          stage_number: number
+          subscription_id: string
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          id?: string
+          is_completed?: boolean | null
+          notes?: string | null
+          stage_number?: number
+          subscription_id?: string
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accelerator_checklist_progress_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "accelerator_stage_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       accelerator_programs: {
         Row: {
           created_at: string
@@ -55,6 +102,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      accelerator_stage_templates: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean | null
+          is_required: boolean | null
+          item_description: string | null
+          item_name: string
+          item_order: number
+          stage_number: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          is_required?: boolean | null
+          item_description?: string | null
+          item_name: string
+          item_order: number
+          stage_number: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          is_required?: boolean | null
+          item_description?: string | null
+          item_name?: string
+          item_order?: number
+          stage_number?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       accelerator_stages: {
         Row: {
@@ -466,6 +549,20 @@ export type Database = {
       create_service_expired_alerts: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      get_stage_checklist_progress: {
+        Args: { p_subscription_id: string; p_stage_number: number }
+        Returns: {
+          template_id: string
+          item_name: string
+          item_description: string
+          is_required: boolean
+          is_completed: boolean
+          completed_at: string
+          completed_by: string
+          notes: string
+          item_order: number
+        }[]
       }
     }
     Enums: {

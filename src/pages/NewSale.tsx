@@ -158,12 +158,36 @@ export default function NewSale() {
 
       if (installmentsError) throw installmentsError
 
-      // Step 4: Send onboarding webhook with all data
+      // Step 4: AUTOMATICALLY CREATE ACCELERATOR PROGRAM
+      console.log('Creating accelerator program automatically for subscription:', subscription.id)
+      
+      const programEndDate = new Date(startDate)
+      programEndDate.setDate(programEndDate.getDate() + 120) // 120 días para el programa
+      
+      const { data: acceleratorProgram, error: acceleratorError } = await supabase
+        .from('accelerator_programs')
+        .insert({
+          subscription_id: subscription.id,
+          program_start_date: startDate,
+          program_end_date: programEndDate.toISOString().split('T')[0]
+        })
+        .select()
+        .single()
+
+      if (acceleratorError) {
+        console.error('Error creating accelerator program:', acceleratorError)
+        // No lanzamos error para no fallar toda la venta, pero lo logueamos
+      } else {
+        console.log('Accelerator program created successfully:', acceleratorProgram)
+      }
+
+      // Step 5: Send onboarding webhook with all data
       const webhookData = {
         client: clientInfo,
         subscription: subscription,
         plan: selectedPlan,
         installments: createdInstallments,
+        accelerator_program: acceleratorProgram || null,
         onboarding: {
           next_step: 'pending_onboarding',
           call_level_included: callLevelIncluded,
@@ -194,16 +218,19 @@ export default function NewSale() {
         throw new Error('Failed to send onboarding webhook')
       }
 
-      return { clientId, subscriptionId: subscription.id }
+      return { clientId, subscriptionId: subscription.id, acceleratorProgram }
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['clients'] })
       queryClient.invalidateQueries({ queryKey: ['installments'] })
       queryClient.invalidateQueries({ queryKey: ['dashboard-metrics'] })
+      queryClient.invalidateQueries({ queryKey: ['accelerator-programs'] })
       
       toast({
         title: "¡Venta creada exitosamente!",
-        description: "La nueva suscripción ha sido registrada y el webhook de onboarding ha sido enviado automáticamente."
+        description: data.acceleratorProgram ? 
+          "La nueva suscripción y el programa de aceleradora han sido creados automáticamente." :
+          "La nueva suscripción ha sido registrada. El programa de aceleradora se creará automáticamente."
       })
       
       navigate(`/clients/${data.clientId}`)

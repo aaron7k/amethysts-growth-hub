@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Clock, RefreshCw } from 'lucide-react';
+import { Loader2, Clock, RefreshCw, LogIn } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 
 const PendingApproval = () => {
@@ -28,6 +28,11 @@ const PendingApproval = () => {
       });
     }
     setIsRetrying(false);
+  };
+
+  const handleRetryLogin = async () => {
+    await signOut();
+    // The user will be redirected to /auth automatically by the ProtectedRoute component
   };
 
   const handleSignOut = async () => {
@@ -59,7 +64,7 @@ const PendingApproval = () => {
 
           <div className="text-center space-y-4">
             <p className="text-sm text-muted-foreground">
-              ¿No has recibido respuesta? Puedes reenviar tu solicitud de aprobación.
+              ¿No has recibido respuesta? Puedes reenviar tu solicitud de aprobación o volver a intentar iniciar sesión.
             </p>
             
             <div className="flex flex-col gap-3">
@@ -71,7 +76,16 @@ const PendingApproval = () => {
               >
                 {isRetrying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {!isRetrying && <RefreshCw className="mr-2 h-4 w-4" />}
-                Intentar de nuevo
+                Reenviar solicitud
+              </Button>
+              
+              <Button
+                onClick={handleRetryLogin}
+                variant="default"
+                className="w-full"
+              >
+                <LogIn className="mr-2 h-4 w-4" />
+                Volver a intentar iniciar sesión
               </Button>
               
               <Button

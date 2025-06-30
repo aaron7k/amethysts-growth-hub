@@ -5,14 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 const Documentation = () => {
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Documentación</h1>
-        <p className="text-muted-foreground">Accede a toda la documentación del sistema</p>
-      </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Manual del Sistema</CardTitle>
+          <CardTitle>Documentación Infragrowth AI</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <iframe

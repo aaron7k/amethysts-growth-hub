@@ -64,9 +64,18 @@ const Plans = () => {
   // Create plan mutation
   const createPlanMutation = useMutation({
     mutationFn: async (planData: PlanFormData) => {
+      const insertData = {
+        name: planData.name,
+        description: planData.description || null,
+        price_usd: planData.price_usd,
+        duration_days: planData.duration_days,
+        plan_type: planData.plan_type,
+        is_active: planData.is_active
+      };
+      
       const { data, error } = await supabase
         .from('plans')
-        .insert(planData)
+        .insert(insertData)
         .select()
         .single();
       
@@ -87,9 +96,18 @@ const Plans = () => {
   // Update plan mutation
   const updatePlanMutation = useMutation({
     mutationFn: async ({ id, ...planData }: PlanFormData & { id: string }) => {
+      const updateData = {
+        name: planData.name,
+        description: planData.description || null,
+        price_usd: planData.price_usd,
+        duration_days: planData.duration_days,
+        plan_type: planData.plan_type,
+        is_active: planData.is_active
+      };
+      
       const { data, error } = await supabase
         .from('plans')
-        .update(planData)
+        .update(updateData)
         .eq('id', id)
         .select()
         .single();

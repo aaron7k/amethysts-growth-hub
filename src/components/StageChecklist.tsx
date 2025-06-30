@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -62,7 +61,7 @@ const StageChecklist = ({ subscriptionId, stageNumber, stageName, isCurrentStage
       console.log('Updating progress for template:', templateId, 'completed:', isCompleted)
       
       if (isCompleted) {
-        // Insertar o actualizar el progreso
+        // Insertar o actualizar el progreso como completado
         const { error } = await supabase
           .from('accelerator_checklist_progress')
           .upsert({
@@ -81,22 +80,16 @@ const StageChecklist = ({ subscriptionId, stageNumber, stageName, isCurrentStage
           throw error
         }
       } else {
-        // Eliminar el progreso o marcarlo como no completado
+        // Para desmarcar: eliminar el registro o marcarlo como no completado
         const { error } = await supabase
           .from('accelerator_checklist_progress')
-          .upsert({
-            subscription_id: subscriptionId,
-            template_id: templateId,
-            stage_number: stageNumber,
-            is_completed: false,
-            completed_at: null,
-            completed_by: null,
-            notes: null,
-            updated_at: new Date().toISOString()
-          })
+          .delete()
+          .eq('subscription_id', subscriptionId)
+          .eq('template_id', templateId)
+          .eq('stage_number', stageNumber)
         
         if (error) {
-          console.error('Error updating progress:', error)
+          console.error('Error removing progress:', error)
           throw error
         }
       }

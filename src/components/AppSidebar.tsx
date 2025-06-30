@@ -40,16 +40,11 @@ export function AppSidebar() {
     return currentPath.startsWith(path)
   }
 
-  const getNavCls = (path: string, isCollapsed: boolean) => {
-    const baseClasses = "flex items-center rounded-lg transition-all duration-200"
-    const activeClasses = "bg-primary text-primary-foreground font-medium amethyst-glow"
-    const inactiveClasses = "hover:bg-accent hover:text-accent-foreground"
-    const collapsedClasses = "justify-center w-10 h-10 p-0"
-    const expandedClasses = "gap-3 px-3 py-2 h-10"
-    
-    return `${baseClasses} ${isCollapsed ? collapsedClasses : expandedClasses} ${
-      isActive(path) ? activeClasses : inactiveClasses
-    }`
+  const getNavCls = (path: string) => {
+    const active = isActive(path)
+    return active 
+      ? "bg-primary text-primary-foreground font-medium" 
+      : "hover:bg-accent hover:text-accent-foreground"
   }
 
   return (
@@ -86,15 +81,15 @@ export function AppSidebar() {
                   <SidebarMenuButton 
                     asChild 
                     tooltip={collapsed ? item.title : undefined}
-                    className="p-0 h-auto"
+                    className={getNavCls(item.url)}
                   >
                     <NavLink 
                       to={item.url} 
-                      className={getNavCls(item.url, collapsed)}
+                      className="flex items-center gap-3 w-full"
                     >
                       <item.icon className="h-5 w-5 flex-shrink-0" />
                       {!collapsed && (
-                        <span className="font-medium text-base truncate min-w-0">
+                        <span className="font-medium text-base truncate">
                           {item.title}
                         </span>
                       )}

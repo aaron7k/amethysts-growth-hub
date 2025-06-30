@@ -13,13 +13,31 @@ import { GlobalSearch } from "@/components/GlobalSearch"
 export function TopNavigation() {
   const { user, signOut } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const handleSignOut = async () => {
     await signOut();
   };
 
-  const handleSearchClick = () => {
+  const handleSearchFocus = () => {
     setSearchOpen(true);
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    if (value.length >= 2) {
+      setSearchOpen(true);
+    } else {
+      setSearchOpen(false);
+    }
+  };
+
+  const handleSearchClose = (open: boolean) => {
+    setSearchOpen(open);
+    if (!open) {
+      setSearchTerm("");
+    }
   };
 
   const userInitials = user?.user_metadata?.full_name
@@ -39,11 +57,16 @@ export function TopNavigation() {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 
             placeholder="Buscar clientes, pagos..." 
-            className="pl-10 w-60 sm:w-80 bg-muted/50 cursor-pointer"
-            onClick={handleSearchClick}
-            readOnly
+            className="pl-10 w-60 sm:w-80 bg-muted/50"
+            value={searchTerm}
+            onChange={handleSearchChange}
+            onFocus={handleSearchFocus}
           />
-          <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
+          <GlobalSearch 
+            open={searchOpen} 
+            onOpenChange={handleSearchClose}
+            searchTerm={searchTerm}
+          />
         </div>
       </div>
       

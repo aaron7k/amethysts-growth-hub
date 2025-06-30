@@ -1,18 +1,17 @@
 
-import { useState, useEffect, useRef } from "react"
+import { useEffect, useRef } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
-import { Search, Users, CreditCard } from "lucide-react"
+import { Users, CreditCard } from "lucide-react"
 import { useNavigate } from "react-router-dom"
-import { Input } from "@/components/ui/input"
 
 interface GlobalSearchProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  searchTerm: string
 }
 
-export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
-  const [searchTerm, setSearchTerm] = useState("")
+export function GlobalSearch({ open, onOpenChange, searchTerm }: GlobalSearchProps) {
   const navigate = useNavigate()
   const searchRef = useRef<HTMLDivElement>(null)
 
@@ -76,20 +75,12 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
   const handleSelectClient = (clientId: string) => {
     navigate(`/clients/${clientId}`)
     onOpenChange(false)
-    setSearchTerm("")
   }
 
   const handleSelectPayment = (clientId: string) => {
     navigate(`/clients/${clientId}`)
     onOpenChange(false)
-    setSearchTerm("")
   }
-
-  useEffect(() => {
-    if (!open) {
-      setSearchTerm("")
-    }
-  }, [open])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -116,19 +107,6 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
       ref={searchRef}
       className="absolute top-full left-0 right-0 z-50 bg-background border border-border rounded-lg shadow-lg mt-2 max-h-96 overflow-hidden"
     >
-      <div className="p-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar clientes, pagos..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-            autoFocus
-          />
-        </div>
-      </div>
-
       <div className="max-h-80 overflow-y-auto">
         {isLoading && (
           <div className="p-4 text-center text-muted-foreground">

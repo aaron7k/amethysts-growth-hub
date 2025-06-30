@@ -4,14 +4,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { Calendar, Clock, CheckCircle, AlertTriangle, Target, Users } from "lucide-react"
+import { Calendar, Clock, CheckCircle, AlertTriangle, Target, Users, Settings } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
 import { useState } from "react"
+import StageChecklist from "@/components/StageChecklist"
+import ChecklistTemplateManager from "@/components/ChecklistTemplateManager"
 
 interface AcceleratorProgram {
   id: string
@@ -52,6 +53,7 @@ const Accelerator = () => {
   const [newProgramOpen, setNewProgramOpen] = useState(false)
   const [selectedSubscription, setSelectedSubscription] = useState<string>("")
   const [startDate, setStartDate] = useState<string>("")
+  const [showTemplateManager, setShowTemplateManager] = useState(false)
   const queryClient = useQueryClient()
 
   // Obtener programas de aceleradora
@@ -273,6 +275,10 @@ const Accelerator = () => {
     return diff
   }
 
+  if (showTemplateManager) {
+    return <ChecklistTemplateManager />
+  }
+
   if (programsLoading) {
     return <div className="p-6">Cargando programas...</div>
   }
@@ -287,64 +293,69 @@ const Accelerator = () => {
           </p>
         </div>
         
-        <Dialog open={newProgramOpen} onOpenChange={setNewProgramOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Users className="mr-2 h-4 w-4" />
-              Nuevo Programa
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Crear Nuevo Programa</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="subscription">Cliente</Label>
-                {subscriptionsLoading ? (
-                  <div className="text-sm text-muted-foreground">Cargando clientes...</div>
-                ) : (
-                  <Select value={selectedSubscription} onValueChange={setSelectedSubscription}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar cliente" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableSubscriptions?.map((sub) => (
-                        <SelectItem key={sub.id} value={sub.id}>
-                          {sub.clients?.full_name} - {sub.plans?.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-                {availableSubscriptions?.length === 0 && !subscriptionsLoading && (
-                  <div className="text-sm text-muted-foreground mt-2">
-                    No hay suscripciones disponibles para crear programas
-                  </div>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="start-date">Fecha de Inicio</Label>
-                <Input
-                  id="start-date"
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                />
-              </div>
-              <Button 
-                onClick={() => createProgramMutation.mutate({ 
-                  subscriptionId: selectedSubscription, 
-                  startDate 
-                })}
-                disabled={!selectedSubscription || !startDate || createProgramMutation.isPending}
-                className="w-full"
-              >
-                {createProgramMutation.isPending ? 'Creando...' : 'Crear Programa'}
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setShowTemplateManager(true)}
+          >
+            <Settings className="mr-2 h-4 w-4" />
+            Configurar Checklists
+          </Button>
+          
+          <Dialog open={newProgramOpen} onOpenChange={setNewProgramOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Users className="mr-2 h-4 w-4" />
+                Nuevo Programa
               </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Crear Nuevo Programa</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="subscription">Cliente</Label>
+                  {subscriptionsLoading ? (
+                    <div className="text-sm text-muted-foreground">Cargando clientes...</div>
+                  ) : (
+                    <Select value={selectedSubscription} onValueChange={setSelectedSubscription}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar cliente" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableSubscriptions?.map((sub) => (
+                          <SelectItem key={sub.id} value={sub.id}>
+                            {sub.clients?.full_name} - {sub.plans?.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="start-date">Fecha de Inicio</Label>
+                  <Input
+                    id="start-date"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                  />
+                </div>
+                <Button 
+                  onClick={() => createProgramMutation.mutate({ 
+                    subscriptionId: selectedSubscription, 
+                    startDate 
+                  })}
+                  disabled={!selectedSubscription || !startDate || createProgramMutation.isPending}
+                  className="w-full"
+                >
+                  {createProgramMutation.isPending ? 'Creando...' : 'Crear Programa'}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {programs?.length === 0 && (
@@ -452,61 +463,73 @@ const Accelerator = () => {
               </div>
 
               {selectedProgram === program.subscription_id && stages && (
-                <div className="space-y-4 border-t pt-4">
+                <div className="space-y-6 border-t pt-4">
                   {stages.map((stage, index) => (
-                    <div key={stage.id} className="relative">
-                      <div className="flex items-center gap-4">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium ${getStatusColor(stage.status)}`}>
-                          {stage.stage_number}
-                        </div>
-                        
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h4 className="font-medium">{stage.stage_name}</h4>
-                              <p className="text-sm text-muted-foreground">
-                                {new Date(stage.start_date).toLocaleDateString('es-ES')} - {new Date(stage.end_date).toLocaleDateString('es-ES')}
+                    <div key={stage.id} className="space-y-4">
+                      <div className="relative">
+                        <div className="flex items-center gap-4">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium ${getStatusColor(stage.status)}`}>
+                            {stage.stage_number}
+                          </div>
+                          
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <h4 className="font-medium">{stage.stage_name}</h4>
+                                <p className="text-sm text-muted-foreground">
+                                  {new Date(stage.start_date).toLocaleDateString('es-ES')} - {new Date(stage.end_date).toLocaleDateString('es-ES')}
+                                </p>
+                              </div>
+                              
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline">
+                                  {getStatusLabel(stage.status)}
+                                </Badge>
+                                
+                                {stage.status === 'in_progress' && (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => completeStage(stage.id)}
+                                  >
+                                    <CheckCircle className="mr-1 h-3 w-3" />
+                                    Completar
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div className="mt-2">
+                              <Progress 
+                                value={calculateProgress(stage.start_date, stage.end_date)} 
+                                className="h-2"
+                              />
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {calculateProgress(stage.start_date, stage.end_date)}% completado
                               </p>
                             </div>
                             
-                            <div className="flex items-center gap-2">
-                              <Badge variant="outline">
-                                {getStatusLabel(stage.status)}
-                              </Badge>
-                              
-                              {stage.status === 'in_progress' && (
-                                <Button
-                                  size="sm"
-                                  onClick={() => completeStage(stage.id)}
-                                >
-                                  <CheckCircle className="mr-1 h-3 w-3" />
-                                  Completar
-                                </Button>
-                              )}
-                            </div>
+                            {stage.notes && (
+                              <p className="text-sm text-muted-foreground mt-2 italic">
+                                {stage.notes}
+                              </p>
+                            )}
                           </div>
-                          
-                          <div className="mt-2">
-                            <Progress 
-                              value={calculateProgress(stage.start_date, stage.end_date)} 
-                              className="h-2"
-                            />
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {calculateProgress(stage.start_date, stage.end_date)}% completado
-                            </p>
-                          </div>
-                          
-                          {stage.notes && (
-                            <p className="text-sm text-muted-foreground mt-2 italic">
-                              {stage.notes}
-                            </p>
-                          )}
                         </div>
+                        
+                        {index < stages.length - 1 && (
+                          <div className="absolute left-4 top-8 w-px h-12 bg-border"></div>
+                        )}
                       </div>
                       
-                      {index < stages.length - 1 && (
-                        <div className="absolute left-4 top-8 w-px h-12 bg-border"></div>
-                      )}
+                      {/* Checklist para la etapa */}
+                      <div className="ml-12">
+                        <StageChecklist
+                          subscriptionId={program.subscription_id}
+                          stageNumber={stage.stage_number}
+                          stageName={stage.stage_name}
+                          isCurrentStage={program.current_stage === stage.stage_number}
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>

@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
+import { format, addDays } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -78,7 +78,7 @@ export const SubscriptionForm = ({ subscription, onSuccess, onCancel }: Subscrip
     queryFn: async () => {
       const { data, error } = await supabase
         .from('plans')
-        .select('id, name, price_usd, plan_type')
+        .select('id, name, price_usd, plan_type, duration_days')
         .eq('is_active', true)
         .order('name');
       
@@ -100,12 +100,27 @@ export const SubscriptionForm = ({ subscription, onSuccess, onCancel }: Subscrip
 
   const createMutation = useMutation({
     mutationFn: async (data: SubscriptionFormData) => {
+      // Calculate end_date based on start_date and plan duration
+      const selectedPlan = plans?.find(plan => plan.id === data.plan_id);
+      if (!selectedPlan) {
+        throw new Error("Plan no encontrado");
+      }
+
+      const endDate = addDays(data.start_date, selectedPlan.duration_days);
+
       const { error } = await supabase
         .from('subscriptions')
-        .insert([{
-          ...data,
+        .insert({
+          client_id: data.client_id,
+          plan_id: data.plan_id,
           start_date: format(data.start_date, 'yyyy-MM-dd'),
-        }]);
+          end_date: format(endDate, 'yyyy-MM-dd'),
+          total_cost_usd: data.total_cost_usd,
+          status: data.status,
+          next_step: data.next_step,
+          call_level_included: data.call_level_included,
+          notes: data.notes,
+        });
       
       if (error) throw error;
     },
@@ -127,11 +142,26 @@ export const SubscriptionForm = ({ subscription, onSuccess, onCancel }: Subscrip
 
   const updateMutation = useMutation({
     mutationFn: async (data: SubscriptionFormData) => {
+      // Calculate end_date based on start_date and plan duration
+      const selectedPlan = plans?.find(plan => plan.id === data.plan_id);
+      if (!selectedPlan) {
+        throw new Error("Plan no encontrado");
+      }
+
+      const endDate = addDays(data.start_date, selectedPlan.duration_days);
+
       const { error } = await supabase
         .from('subscriptions')
         .update({
-          ...data,
+          client_id: data.client_id,
+          plan_id: data.plan_id,
           start_date: format(data.start_date, 'yyyy-MM-dd'),
+          end_date: format(endDate, 'yyyy-MM-dd'),
+          total_cost_usd: data.total_cost_usd,
+          status: data.status,
+          next_step: data.next_step,
+          call_level_included: data.call_level_included,
+          notes: data.notes,
         })
         .eq('id', subscription.id);
       

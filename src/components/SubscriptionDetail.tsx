@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 import { es } from "date-fns/locale";
 import { Calendar, DollarSign, User, Package, Phone, Mail, FileText } from "lucide-react";
 
@@ -60,6 +60,20 @@ export const SubscriptionDetail = ({ subscription, onClose }: SubscriptionDetail
         {config.label}
       </Badge>
     );
+  };
+
+  const formatSafeDate = (dateString: string) => {
+    if (!dateString) return "N/A";
+    
+    const date = new Date(dateString);
+    if (!isValid(date)) return "Fecha inválida";
+    
+    try {
+      return format(date, 'dd/MM/yyyy', { locale: es });
+    } catch (error) {
+      console.error('Error formatting date:', dateString, error);
+      return "Error en fecha";
+    }
   };
 
   return (
@@ -135,14 +149,14 @@ export const SubscriptionDetail = ({ subscription, onClose }: SubscriptionDetail
               <p className="text-sm font-medium text-muted-foreground">Fecha de Inicio</p>
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
-                <p>{format(new Date(subscription.start_date), 'dd/MM/yyyy', { locale: es })}</p>
+                <p>{formatSafeDate(subscription.start_date)}</p>
               </div>
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">Fecha de Fin</p>
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
-                <p>{format(new Date(subscription.end_date), 'dd/MM/yyyy', { locale: es })}</p>
+                <p>{formatSafeDate(subscription.end_date)}</p>
               </div>
             </div>
             <div>
@@ -189,11 +203,11 @@ export const SubscriptionDetail = ({ subscription, onClose }: SubscriptionDetail
                   <div>
                     <p className="font-medium">Cuota #{installment.installment_number}</p>
                     <p className="text-sm text-muted-foreground">
-                      Vence: {format(new Date(installment.due_date), 'dd/MM/yyyy', { locale: es })}
+                      Vence: {formatSafeDate(installment.due_date)}
                     </p>
                     {installment.payment_date && (
                       <p className="text-sm text-muted-foreground">
-                        Pagado: {format(new Date(installment.payment_date), 'dd/MM/yyyy', { locale: es })}
+                        Pagado: {formatSafeDate(installment.payment_date)}
                       </p>
                     )}
                   </div>

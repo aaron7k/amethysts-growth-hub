@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Eye, Edit, Trash2, Search } from "lucide-react";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 import { es } from "date-fns/locale";
 
 interface Subscription {
@@ -91,6 +91,20 @@ export const SubscriptionTable = ({
     );
   };
 
+  const formatSafeDate = (dateString: string) => {
+    if (!dateString) return "N/A";
+    
+    const date = new Date(dateString);
+    if (!isValid(date)) return "Fecha inválida";
+    
+    try {
+      return format(date, 'dd/MM/yyyy', { locale: es });
+    } catch (error) {
+      console.error('Error formatting date:', dateString, error);
+      return "Error en fecha";
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Filters */}
@@ -163,10 +177,10 @@ export const SubscriptionTable = ({
                       {subscription.next_step && getNextStepBadge(subscription.next_step)}
                     </TableCell>
                     <TableCell>
-                      {format(new Date(subscription.start_date), 'dd/MM/yyyy', { locale: es })}
+                      {formatSafeDate(subscription.start_date)}
                     </TableCell>
                     <TableCell>
-                      {format(new Date(subscription.end_date), 'dd/MM/yyyy', { locale: es })}
+                      {formatSafeDate(subscription.end_date)}
                     </TableCell>
                     <TableCell>
                       ${subscription.total_cost_usd.toLocaleString()}

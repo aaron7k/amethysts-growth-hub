@@ -1,5 +1,5 @@
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Home, Users, CreditCard, Plus, UserCheck, Settings, Zap, FileText, ChevronLeft, ChevronRight } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 
@@ -25,6 +25,12 @@ export function AppSidebar() {
     }
     return currentPath.startsWith(path)
   }
+
+  // Update CSS custom property when collapsed state changes
+  useEffect(() => {
+    const sidebarWidth = collapsed ? '64px' : '256px'
+    document.documentElement.style.setProperty('--sidebar-width', sidebarWidth)
+  }, [collapsed])
 
   return (
     <div className={`fixed left-0 top-0 h-screen bg-card border-r border-border transition-all duration-300 flex flex-col z-40 ${
@@ -104,20 +110,6 @@ export function AppSidebar() {
           })}
         </nav>
       </div>
-
-      {/* Spacer to push content to the right when sidebar is present */}
-      <style jsx global>{`
-        body {
-          margin-left: ${collapsed ? '64px' : '256px'};
-          transition: margin-left 0.3s ease;
-        }
-        
-        @media (max-width: 768px) {
-          body {
-            margin-left: 0;
-          }
-        }
-      `}</style>
     </div>
   )
 }

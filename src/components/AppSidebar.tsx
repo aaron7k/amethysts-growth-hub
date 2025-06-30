@@ -80,14 +80,14 @@ export function AppSidebar() {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton 
                     asChild 
-                    className="h-9 sm:h-10"
+                    className={collapsed ? "h-10 w-10 p-0 justify-center" : "h-9 sm:h-10"}
                     tooltip={collapsed ? item.title : undefined}
                   >
                     <NavLink 
                       to={item.url} 
-                      className={`flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2 rounded-lg transition-all duration-200 ${getNavCls(item.url)}`}
+                      className={`flex items-center rounded-lg transition-all duration-200 ${collapsed ? 'justify-center p-2 w-10 h-10' : 'gap-2 sm:gap-3 px-2 sm:px-3 py-2'} ${getNavCls(item.url)}`}
                     >
-                      <item.icon className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                      <item.icon className={`flex-shrink-0 ${collapsed ? 'h-5 w-5' : 'h-4 w-4 sm:h-5 sm:w-5'}`} />
                       {!collapsed && <span className="font-medium text-sm sm:text-base truncate">{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>

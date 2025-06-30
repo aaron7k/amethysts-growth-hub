@@ -88,13 +88,13 @@ const Accelerator = () => {
     }
   })
 
-  // Obtener TODAS las suscripciones activas - corregir la consulta
+  // Obtener suscripciones activas con planes de aceleradora que no estén en programas activos
   const { data: availableSubscriptions, isLoading: subscriptionsLoading } = useQuery({
     queryKey: ['available-subscriptions'],
     queryFn: async () => {
       console.log('Fetching available subscriptions...')
       
-      // Primero obtener todas las suscripciones activas
+      // Primero obtener todas las suscripciones activas con planes de aceleradora
       const { data: allSubscriptions, error: subsError } = await supabase
         .from('subscriptions')
         .select(`
@@ -105,10 +105,12 @@ const Accelerator = () => {
           ),
           plans!inner (
             id,
-            name
+            name,
+            plan_type
           )
         `)
         .eq('status', 'active')
+        .eq('plans.name', 'Accelerator Program')
       
       if (subsError) {
         console.error('Error fetching subscriptions:', subsError)
@@ -356,7 +358,7 @@ const Accelerator = () => {
                     </Select>
                   ) : (
                     <div className="text-sm text-muted-foreground">
-                      No hay clientes disponibles para crear programas
+                      No hay clientes con planes de Accelerator Program disponibles
                     </div>
                   )}
                 </div>

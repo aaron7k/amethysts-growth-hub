@@ -23,6 +23,13 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
 
       console.log('Buscando con término:', searchTerm)
 
+      // Normalize search term for better matching
+      const normalizedSearch = searchTerm
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Remove accents
+        .trim()
+
       const [clientsResult, paymentsResult] = await Promise.all([
         supabase
           .from('clients')
@@ -47,8 +54,19 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
       console.log('Resultados clientes:', clientsResult.data)
       console.log('Resultados pagos:', paymentsResult.data)
 
+      // Additional client-side filtering for better accent/case matching
+      const filteredClients = (clientsResult.data || []).filter(client => {
+        const clientName = (client.full_name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        const clientEmail = (client.email || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        const clientPhone = (client.phone_number || '').toLowerCase()
+        
+        return clientName.includes(normalizedSearch) || 
+               clientEmail.includes(normalizedSearch) || 
+               clientPhone.includes(normalizedSearch)
+      })
+
       return {
-        clients: clientsResult.data || [],
+        clients: filteredClients,
         payments: paymentsResult.data || []
       }
     },

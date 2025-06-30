@@ -205,7 +205,7 @@ const Plans = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={plan.plan_type === 'core' ? 'default' : 'secondary'}>
+                    <Badge variant={plan.plan_type === 'core' ? 'default' : 'outline'}>
                       {plan.plan_type === 'core' ? 'Core' : 'Renovación'}
                     </Badge>
                   </TableCell>

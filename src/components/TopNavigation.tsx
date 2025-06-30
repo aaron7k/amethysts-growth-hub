@@ -6,6 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Bell, Search, LogOut, User } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/hooks/useAuth"
+import { ThemeSwitch } from "@/components/ThemeSwitch"
 
 export function TopNavigation() {
   const { user, signOut } = useAuth();
@@ -41,6 +42,9 @@ export function TopNavigation() {
         <Button variant="ghost" size="icon" className="sm:hidden">
           <Search className="h-5 w-5" />
         </Button>
+        
+        {/* Theme Switch */}
+        <ThemeSwitch />
         
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-4 w-4 sm:h-5 sm:w-5" />

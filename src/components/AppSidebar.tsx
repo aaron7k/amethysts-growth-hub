@@ -1,6 +1,6 @@
 
 import { useState } from "react"
-import { Home, Users, CreditCard, Plus, UserCheck, Settings, Zap } from "lucide-react"
+import { Home, Users, CreditCard, Plus, UserCheck, Settings, Zap, FileText } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import { useIsMobile } from "@/hooks/use-mobile"
 
@@ -20,6 +20,7 @@ import {
 const mainItems = [
   { title: "Dashboard", url: "/", icon: Home },
   { title: "Clientes", url: "/clients", icon: Users },
+  { title: "Suscripciones", url: "/subscriptions", icon: FileText },
   { title: "Pagos", url: "/payments", icon: CreditCard },
   { title: "Planes", url: "/plans", icon: Settings },
   { title: "Nueva Venta", url: "/new-sale", icon: Plus },

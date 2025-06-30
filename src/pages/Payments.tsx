@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
-import { CreditCard, Search, Filter, CheckCircle, DollarSign, Edit, Trash2 } from "lucide-react"
+import { CreditCard, Search, Filter, CheckCircle, DollarSign, Edit, Trash2, Plus } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -19,6 +19,8 @@ type InstallmentStatus = 'pending' | 'paid' | 'overdue'
 type PaymentMethod = 'crypto' | 'stripe' | 'bank_transfer' | 'paypal' | 'bbva' | 'dolar_app' | 'payoneer' | 'cash' | 'binance' | 'mercado_pago'
 
 const paymentSchema = z.object({
+  subscription_id: z.string().min(1, "La suscripción es requerida"),
+  installment_number: z.string().min(1, "El número de cuota es requerido"),
   amount_usd: z.string().min(1, "El monto es requerido"),
   due_date: z.string().min(1, "La fecha de vencimiento es requerida"),
   status: z.enum(['pending', 'paid', 'overdue']),
@@ -34,6 +36,7 @@ export default function Payments() {
   const [searchTerm, setSearchTerm] = useState("")
   const [editingPayment, setEditingPayment] = useState<any>(null)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [paymentToDelete, setPaymentToDelete] = useState<any>(null)
   const { toast } = useToast()
@@ -42,12 +45,33 @@ export default function Payments() {
   const form = useForm<PaymentFormData>({
     resolver: zodResolver(paymentSchema),
     defaultValues: {
+      subscription_id: "",
+      installment_number: "",
       amount_usd: "",
       due_date: "",
       status: "pending",
       payment_method: undefined,
       payment_date: "",
       notes: ""
+    }
+  })
+
+  // Fetch subscriptions for the create form
+  const { data: subscriptions } = useQuery({
+    queryKey: ['subscriptions'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select(`
+          id,
+          clients(full_name, email),
+          plans(name)
+        `)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      return data
     }
   })
 
@@ -86,6 +110,43 @@ export default function Payments() {
     }
   })
 
+  const createPaymentMutation = useMutation({
+    mutationFn: async (data: PaymentFormData) => {
+      const insertData = {
+        subscription_id: data.subscription_id,
+        installment_number: parseInt(data.installment_number),
+        amount_usd: parseFloat(data.amount_usd),
+        due_date: data.due_date,
+        status: data.status,
+        payment_method: data.payment_method,
+        payment_date: data.payment_date || null,
+        notes: data.notes
+      }
+
+      const { error } = await supabase
+        .from('installments')
+        .insert(insertData)
+
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['installments'] })
+      toast({
+        title: "Pago creado",
+        description: "El pago ha sido creado exitosamente."
+      })
+      setIsCreateDialogOpen(false)
+      form.reset()
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo crear el pago. Inténtalo de nuevo.",
+        variant: "destructive"
+      })
+    }
+  })
+
   const markAsPaidMutation = useMutation({
     mutationFn: async ({ installmentId, paymentMethod }: { installmentId: string, paymentMethod: PaymentMethod }) => {
       const { error } = await supabase
@@ -119,6 +180,8 @@ export default function Payments() {
   const updatePaymentMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string, data: PaymentFormData }) => {
       const updateData = {
+        subscription_id: data.subscription_id,
+        installment_number: parseInt(data.installment_number),
         amount_usd: parseFloat(data.amount_usd),
         due_date: data.due_date,
         status: data.status,
@@ -181,9 +244,16 @@ export default function Payments() {
     }
   })
 
+  const handleCreatePayment = () => {
+    form.reset()
+    setIsCreateDialogOpen(true)
+  }
+
   const handleEditPayment = (installment: any) => {
     setEditingPayment(installment)
     form.reset({
+      subscription_id: installment.subscription_id,
+      installment_number: installment.installment_number.toString(),
       amount_usd: installment.amount_usd.toString(),
       due_date: installment.due_date,
       status: installment.status,
@@ -202,6 +272,8 @@ export default function Payments() {
   const onSubmit = (data: PaymentFormData) => {
     if (editingPayment) {
       updatePaymentMutation.mutate({ id: editingPayment.id, data })
+    } else {
+      createPaymentMutation.mutate(data)
     }
   }
 
@@ -257,6 +329,10 @@ export default function Payments() {
             Administra todas las cuotas y pagos del sistema
           </p>
         </div>
+        <Button onClick={handleCreatePayment} className="flex items-center gap-2">
+          <Plus className="h-4 w-4" />
+          Nuevo Pago
+        </Button>
       </div>
 
       {/* Summary Cards */}
@@ -472,30 +548,76 @@ export default function Payments() {
         </CardContent>
       </Card>
 
-      {/* Edit Payment Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+      {/* Create/Edit Payment Dialog */}
+      <Dialog open={isCreateDialogOpen || isEditDialogOpen} onOpenChange={(open) => {
+        if (!open) {
+          setIsCreateDialogOpen(false)
+          setIsEditDialogOpen(false)
+          setEditingPayment(null)
+          form.reset()
+        }
+      }}>
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Editar Pago</DialogTitle>
+            <DialogTitle>{editingPayment ? 'Editar Pago' : 'Crear Nuevo Pago'}</DialogTitle>
             <DialogDescription>
-              Actualiza la información del pago aquí.
+              {editingPayment ? 'Actualiza la información del pago aquí.' : 'Crea una nueva cuota de pago aquí.'}
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
                 control={form.control}
-                name="amount_usd"
+                name="subscription_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Monto (USD)</FormLabel>
-                    <FormControl>
-                      <Input {...field} type="number" step="0.01" />
-                    </FormControl>
+                    <FormLabel>Suscripción</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona una suscripción" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {subscriptions?.map((subscription) => (
+                          <SelectItem key={subscription.id} value={subscription.id}>
+                            {subscription.clients?.full_name} - {subscription.plans?.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="installment_number"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Número de Cuota</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="number" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="amount_usd"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Monto (USD)</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="number" step="0.01" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               <FormField
                 control={form.control}
                 name="due_date"
@@ -587,8 +709,11 @@ export default function Payments() {
                 )}
               />
               <DialogFooter>
-                <Button type="submit" disabled={updatePaymentMutation.isPending}>
-                  {updatePaymentMutation.isPending ? "Actualizando..." : "Actualizar Pago"}
+                <Button type="submit" disabled={createPaymentMutation.isPending || updatePaymentMutation.isPending}>
+                  {createPaymentMutation.isPending || updatePaymentMutation.isPending ? 
+                    (editingPayment ? "Actualizando..." : "Creando...") : 
+                    (editingPayment ? "Actualizar Pago" : "Crear Pago")
+                  }
                 </Button>
               </DialogFooter>
             </form>

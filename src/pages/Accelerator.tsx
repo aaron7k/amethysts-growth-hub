@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useState } from "react"
 import StageChecklist from "@/components/StageChecklist"
 import ChecklistTemplateManager from "@/components/ChecklistTemplateManager"
+import DiscordChannelManager from "@/components/DiscordChannelManager"
 
 interface AcceleratorProgram {
   id: string
@@ -469,6 +470,11 @@ const Accelerator = () => {
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold">Timeline de Etapas</h3>
                 <div className="flex gap-2">
+                  <DiscordChannelManager 
+                    subscriptionId={program.subscription_id}
+                    clientName={program.subscriptions.clients.full_name}
+                  />
+                  
                   <Button
                     variant="outline"
                     size="sm"

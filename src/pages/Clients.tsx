@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
-import { Search, Users, UserPlus, ExternalLink, Edit, Trash2 } from "lucide-react"
+import { Search, Users, UserPlus, ExternalLink, Edit, Trash2, ArrowUp, ArrowDown } from "lucide-react"
 import { Link } from "react-router-dom"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -29,6 +29,7 @@ type ClientFormData = z.infer<typeof clientSchema>
 export default function Clients() {
   const [searchTerm, setSearchTerm] = useState("")
   const [clientTypeFilter, setClientTypeFilter] = useState<string>("all")
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [editingClient, setEditingClient] = useState<any>(null)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -48,7 +49,7 @@ export default function Clients() {
   })
   
   const { data: clients, isLoading } = useQuery({
-    queryKey: ['clients', searchTerm, clientTypeFilter],
+    queryKey: ['clients', searchTerm, clientTypeFilter, sortOrder],
     queryFn: async () => {
       let query = supabase
         .from('clients')
@@ -60,7 +61,7 @@ export default function Clients() {
             plans(name, plan_type)
           )
         `)
-        .order('updated_at', { ascending: false })
+        .order('updated_at', { ascending: sortOrder === 'asc' })
 
       if (searchTerm) {
         query = query.or(`full_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`)
@@ -157,6 +158,10 @@ export default function Clients() {
     if (editingClient) {
       updateClientMutation.mutate({ id: editingClient.id, data })
     }
+  }
+
+  const handleSortToggle = () => {
+    setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
   }
 
   const getClientTypeLabel = (type: string) => {
@@ -256,7 +261,21 @@ export default function Clients() {
                   <TableHead>Suscripciones</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Carpeta Drive</TableHead>
-                  <TableHead>Última Actualización</TableHead>
+                  <TableHead>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={handleSortToggle}
+                      className="flex items-center gap-1 hover:bg-transparent p-0"
+                    >
+                      Última Actualización
+                      {sortOrder === 'asc' ? (
+                        <ArrowUp className="h-3 w-3" />
+                      ) : (
+                        <ArrowDown className="h-3 w-3" />
+                      )}
+                    </Button>
+                  </TableHead>
                   <TableHead>Acciones</TableHead>
                 </TableRow>
               </TableHeader>

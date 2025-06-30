@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ExternalLink, Power, Trash2, Pause, Info } from "lucide-react";
+import { ExternalLink, Power, Trash2, Pause, Info, PowerOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -45,8 +45,7 @@ const Services = () => {
             client:clients(full_name)
           )
         `)
-        .in('service_type', ['gohighlevel_account', 'infraestructure_server'])
-        .eq('is_active', true);
+        .in('service_type', ['gohighlevel_account', 'infraestructure_server']);
       
       if (error) throw error;
       return data;
@@ -88,7 +87,7 @@ const Services = () => {
 
   // Mutation for server actions
   const serverActionMutation = useMutation({
-    mutationFn: async ({ serviceId, action }: { serviceId: string; action: 'apagar' | 'destruir' }) => {
+    mutationFn: async ({ serviceId, action }: { serviceId: string; action: 'apagar' | 'destruir' | 'encender' }) => {
       const response = await fetch('https://hooks.infragrowthai.com/webhook/client/server', {
         method: 'POST',
         headers: {
@@ -104,9 +103,11 @@ const Services = () => {
       return response.json();
     },
     onSuccess: (_, variables) => {
+      const actionText = variables.action === 'apagar' ? 'apagado' : 
+                        variables.action === 'encender' ? 'encendido' : 'destruido';
       toast({
-        title: `Servidor ${variables.action === 'apagar' ? 'apagado' : 'destruido'}`,
-        description: `El servidor ha sido ${variables.action === 'apagar' ? 'apagado' : 'destruido'} exitosamente.`,
+        title: `Servidor ${actionText}`,
+        description: `El servidor ha sido ${actionText} exitosamente.`,
       });
       queryClient.invalidateQueries({ queryKey: ['provisioned-services'] });
     },
@@ -263,7 +264,7 @@ const Services = () => {
             </CardHeader>
             <CardContent>
               {ghlServices.length === 0 ? (
-                <p className="text-muted-foreground">No hay cuentas GHL activas.</p>
+                <p className="text-muted-foreground">No hay cuentas GHL.</p>
               ) : (
                 <Table>
                   <TableHeader>
@@ -354,7 +355,7 @@ const Services = () => {
             </CardHeader>
             <CardContent>
               {serverServices.length === 0 ? (
-                <p className="text-muted-foreground">No hay servidores activos.</p>
+                <p className="text-muted-foreground">No hay servidores.</p>
               ) : (
                 <Table>
                   <TableHeader>
@@ -371,6 +372,8 @@ const Services = () => {
                   <TableBody>
                     {serverServices.map((service) => {
                       const details = service.access_details as any;
+                      const isServerActive = details?.status === 'Activo';
+                      
                       return (
                         <TableRow key={service.id}>
                           <TableCell className="font-medium">
@@ -379,7 +382,7 @@ const Services = () => {
                           <TableCell>{details?.name || 'N/A'}</TableCell>
                           <TableCell>{details?.ip || 'N/A'}</TableCell>
                           <TableCell>
-                            <Badge variant={details?.status === 'Activo' ? "default" : "secondary"}>
+                            <Badge variant={isServerActive ? "default" : "secondary"}>
                               {details?.status || 'N/A'}
                             </Badge>
                           </TableCell>
@@ -388,38 +391,73 @@ const Services = () => {
                           <TableCell>
                             <div className="flex gap-2 flex-wrap">
                               <ServerDetailsModal service={service} />
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    disabled={serverActionMutation.isPending}
-                                  >
-                                    <Power className="h-4 w-4 mr-1" />
-                                    Apagar
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>¿Apagar servidor?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Esta acción apagará el servidor {details?.name} para {service.subscription?.client?.full_name}. 
-                                      El servidor se puede volver a encender posteriormente. ¿Continuar?
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => serverActionMutation.mutate({ 
-                                        serviceId: details?.id_server, 
-                                        action: 'apagar' 
-                                      })}
+                              {isServerActive ? (
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      disabled={serverActionMutation.isPending}
                                     >
+                                      <Power className="h-4 w-4 mr-1" />
                                       Apagar
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>¿Apagar servidor?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Esta acción apagará el servidor {details?.name} para {service.subscription?.client?.full_name}. 
+                                        El servidor se puede volver a encender posteriormente. ¿Continuar?
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => serverActionMutation.mutate({ 
+                                          serviceId: details?.id_server, 
+                                          action: 'apagar' 
+                                        })}
+                                      >
+                                        Apagar
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              ) : (
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      disabled={serverActionMutation.isPending}
+                                    >
+                                      <PowerOff className="h-4 w-4 mr-1" />
+                                      Encender
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>¿Encender servidor?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Esta acción encenderá el servidor {details?.name} para {service.subscription?.client?.full_name}. 
+                                        ¿Continuar?
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => serverActionMutation.mutate({ 
+                                          serviceId: details?.id_server, 
+                                          action: 'encender' 
+                                        })}
+                                      >
+                                        Encender
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              )}
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <Button

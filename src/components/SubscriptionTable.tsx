@@ -105,6 +105,13 @@ export const SubscriptionTable = ({
     }
   };
 
+  const formatSafeCurrency = (amount: number | null | undefined) => {
+    if (amount === null || amount === undefined || isNaN(amount)) {
+      return "N/A";
+    }
+    return `$${amount.toLocaleString()}`;
+  };
+
   return (
     <div className="space-y-4">
       {/* Filters */}
@@ -183,7 +190,7 @@ export const SubscriptionTable = ({
                       {formatSafeDate(subscription.end_date)}
                     </TableCell>
                     <TableCell>
-                      ${subscription.total_cost_usd.toLocaleString()}
+                      {formatSafeCurrency(subscription.total_cost_usd)}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">

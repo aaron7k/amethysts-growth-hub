@@ -1,16 +1,50 @@
 
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useParams, Link } from "react-router-dom"
+import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { supabase } from "@/integrations/supabase/client"
-import { ArrowLeft, User, Mail, Phone, ExternalLink, Calendar, DollarSign, CreditCard } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+import { ArrowLeft, User, Mail, Phone, ExternalLink, Calendar, DollarSign, CreditCard, Edit, Trash2 } from "lucide-react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
+
+const subscriptionSchema = z.object({
+  status: z.enum(['active', 'inactive', 'pending_payment', 'cancelled']),
+  next_step: z.enum(['pending_onboarding', 'in_service', 'needs_contact', 'overdue_payment', 'cancelled']),
+  total_cost_usd: z.string().min(1, "El costo total es requerido"),
+  notes: z.string().optional()
+})
+
+type SubscriptionFormData = z.infer<typeof subscriptionSchema>
 
 export default function ClientDetail() {
   const { id } = useParams<{ id: string }>()
+  const [editingSubscription, setEditingSubscription] = useState<any>(null)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [subscriptionToDelete, setSubscriptionToDelete] = useState<any>(null)
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
+
+  const form = useForm<SubscriptionFormData>({
+    resolver: zodResolver(subscriptionSchema),
+    defaultValues: {
+      status: 'active',
+      next_step: 'in_service',
+      total_cost_usd: "",
+      notes: ""
+    }
+  })
   
   const { data: client, isLoading } = useQuery({
     queryKey: ['client', id],
@@ -35,6 +69,89 @@ export default function ClientDetail() {
     },
     enabled: !!id
   })
+
+  const updateSubscriptionMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string, data: SubscriptionFormData }) => {
+      const { error } = await supabase
+        .from('subscriptions')
+        .update({
+          status: data.status,
+          next_step: data.next_step,
+          total_cost_usd: parseFloat(data.total_cost_usd),
+          notes: data.notes,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['client', id] })
+      toast({
+        title: "Suscripción actualizada",
+        description: "La suscripción ha sido actualizada exitosamente."
+      })
+      setIsEditDialogOpen(false)
+      setEditingSubscription(null)
+      form.reset()
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar la suscripción. Inténtalo de nuevo.",
+        variant: "destructive"
+      })
+    }
+  })
+
+  const deleteSubscriptionMutation = useMutation({
+    mutationFn: async (subscriptionId: string) => {
+      const { error } = await supabase
+        .from('subscriptions')
+        .delete()
+        .eq('id', subscriptionId)
+
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['client', id] })
+      toast({
+        title: "Suscripción eliminada",
+        description: "La suscripción ha sido eliminada exitosamente."
+      })
+      setIsDeleteDialogOpen(false)
+      setSubscriptionToDelete(null)
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar la suscripción. Verifica que no tenga cuotas activas.",
+        variant: "destructive"
+      })
+    }
+  })
+
+  const handleEditSubscription = (subscription: any) => {
+    setEditingSubscription(subscription)
+    form.reset({
+      status: subscription.status,
+      next_step: subscription.next_step,
+      total_cost_usd: subscription.total_cost_usd.toString(),
+      notes: subscription.notes || ""
+    })
+    setIsEditDialogOpen(true)
+  }
+
+  const handleDeleteSubscription = (subscription: any) => {
+    setSubscriptionToDelete(subscription)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const onSubmit = (data: SubscriptionFormData) => {
+    if (editingSubscription) {
+      updateSubscriptionMutation.mutate({ id: editingSubscription.id, data })
+    }
+  }
 
   const getStatusColor = (status: string) => {
     const colors = {
@@ -183,9 +300,26 @@ export default function ClientDetail() {
                           {subscription.plans?.plan_type === 'core' ? 'Plan Principal' : 'Renovación'}
                         </p>
                       </div>
-                      <Badge className={getStatusColor(subscription.status || '')}>
-                        {subscription.status}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge className={getStatusColor(subscription.status || '')}>
+                          {subscription.status}
+                        </Badge>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleEditSubscription(subscription)}
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleDeleteSubscription(subscription)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </div>
                     
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
@@ -291,6 +425,125 @@ export default function ClientDetail() {
           </CardContent>
         </Card>
       )}
+
+      {/* Edit Subscription Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Editar Suscripción</DialogTitle>
+            <DialogDescription>
+              Actualiza la información de la suscripción aquí.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Estado</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona el estado" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="active">Activo</SelectItem>
+                        <SelectItem value="inactive">Inactivo</SelectItem>
+                        <SelectItem value="pending_payment">Pago Pendiente</SelectItem>
+                        <SelectItem value="cancelled">Cancelado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="next_step"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Próximo Paso</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona el próximo paso" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="pending_onboarding">Onboarding Pendiente</SelectItem>
+                        <SelectItem value="in_service">En Servicio</SelectItem>
+                        <SelectItem value="needs_contact">Necesita Contacto</SelectItem>
+                        <SelectItem value="overdue_payment">Pago Atrasado</SelectItem>
+                        <SelectItem value="cancelled">Cancelado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="total_cost_usd"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Costo Total (USD)</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="number" step="0.01" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Notas</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button type="submit" disabled={updateSubscriptionMutation.isPending}>
+                  {updateSubscriptionMutation.isPending ? "Actualizando..." : "Actualizar Suscripción"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Subscription Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Eliminar Suscripción</DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que quieres eliminar la suscripción de "{subscriptionToDelete?.plans?.name}"? 
+              Esta acción no se puede deshacer y eliminará toda la información asociada.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={() => deleteSubscriptionMutation.mutate(subscriptionToDelete?.id)}
+              disabled={deleteSubscriptionMutation.isPending}
+            >
+              {deleteSubscriptionMutation.isPending ? "Eliminando..." : "Eliminar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

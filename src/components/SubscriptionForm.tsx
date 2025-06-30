@@ -14,7 +14,6 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { CalendarIcon } from "lucide-react";
 import { format, addDays } from "date-fns";
-import { es } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -270,7 +269,7 @@ export const SubscriptionForm = ({ subscription, onSuccess, onCancel }: Subscrip
                         )}
                       >
                         {field.value ? (
-                          format(field.value, "PPP", { locale: es })
+                          format(field.value, "PPP", { locale: require('date-fns/locale/es') })
                         ) : (
                           <span>Seleccionar fecha</span>
                         )}
@@ -372,9 +371,9 @@ export const SubscriptionForm = ({ subscription, onSuccess, onCancel }: Subscrip
           render={({ field }) => (
             <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
               <div className="space-y-0.5">
-                <FormLabel className="text-base">Nivel de llamadas incluido</FormLabel>
+                <FormLabel className="text-base">Call Level incluido</FormLabel>
                 <div className="text-sm text-muted-foreground">
-                  ¿Incluye soporte por llamadas?
+                  ¿Incluye Call Level?
                 </div>
               </div>
               <FormControl>

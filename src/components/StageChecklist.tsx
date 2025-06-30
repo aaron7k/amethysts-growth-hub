@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { CheckCircle, Circle, FileText } from "lucide-react"
+import { CheckCircle, Circle, FileText, AlertCircle } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { useState } from "react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 interface StageChecklistProps {
   subscriptionId: string
@@ -33,6 +34,7 @@ interface ChecklistItem {
 const StageChecklist = ({ subscriptionId, stageNumber, stageName, isCurrentStage }: StageChecklistProps) => {
   const [selectedItem, setSelectedItem] = useState<string | null>(null)
   const [notes, setNotes] = useState<string>("")
+  const [pendingItems, setPendingItems] = useState<Set<string>>(new Set())
   const queryClient = useQueryClient()
 
   // Obtener el progreso del checklist para esta etapa
@@ -96,19 +98,37 @@ const StageChecklist = ({ subscriptionId, stageNumber, stageName, isCurrentStage
       
       console.log('Progress updated successfully')
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
+      // Remover del estado de pendientes
+      setPendingItems(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(variables.templateId)
+        return newSet
+      })
+      
       // Invalidar y refrescar los datos
       queryClient.invalidateQueries({ queryKey: ['stage-checklist', subscriptionId, stageNumber] })
       toast({
         title: "Progreso actualizado",
         description: "El elemento del checklist se ha actualizado correctamente"
       })
-      // Limpiar el estado del modal
-      setSelectedItem(null)
-      setNotes("")
+      
+      // Limpiar el estado del modal solo si es el item que se está guardando
+      if (selectedItem === variables.templateId) {
+        setSelectedItem(null)
+        setNotes("")
+      }
     },
-    onError: (error) => {
+    onError: (error, variables) => {
       console.error('Failed to update progress:', error)
+      
+      // Remover del estado de pendientes
+      setPendingItems(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(variables.templateId)
+        return newSet
+      })
+      
       toast({
         title: "Error",
         description: "No se pudo actualizar el progreso",
@@ -122,12 +142,24 @@ const StageChecklist = ({ subscriptionId, stageNumber, stageName, isCurrentStage
     
     const isChecked = checked === true
     
+    // Si ya hay un item siendo procesado, mostrar advertencia
+    if (selectedItem && selectedItem !== item.template_id) {
+      toast({
+        title: "Completar elemento actual",
+        description: "Por favor completa el elemento actual antes de seleccionar otro",
+        variant: "destructive"
+      })
+      return
+    }
+    
     if (isChecked && !item.is_completed) {
       // Marcar como completado - mostrar modal para notas
       setSelectedItem(item.template_id)
       setNotes(item.notes || "")
+      setPendingItems(prev => new Set(prev).add(item.template_id))
     } else if (!isChecked && item.is_completed) {
       // Desmarcar - actualizar directamente
+      setPendingItems(prev => new Set(prev).add(item.template_id))
       updateProgressMutation.mutate({
         templateId: item.template_id,
         isCompleted: false
@@ -146,6 +178,13 @@ const StageChecklist = ({ subscriptionId, stageNumber, stageName, isCurrentStage
   }
 
   const handleCancelNotes = () => {
+    if (selectedItem) {
+      setPendingItems(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(selectedItem)
+        return newSet
+      })
+    }
     setSelectedItem(null)
     setNotes("")
   }
@@ -184,68 +223,95 @@ const StageChecklist = ({ subscriptionId, stageNumber, stageName, isCurrentStage
       </CardHeader>
       
       <CardContent>
+        {/* Advertencia sobre selección múltiple */}
+        {selectedItem && (
+          <Alert className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Importante:</strong> Solo puedes completar un elemento a la vez. 
+              Completa el elemento actual antes de seleccionar otro.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {!checklistItems || checklistItems.length === 0 ? (
           <div className="text-center text-muted-foreground py-4">
             No hay elementos configurados para esta etapa
           </div>
         ) : (
           <div className="space-y-3">
-            {checklistItems.map((item) => (
-              <div key={item.template_id} className="flex items-start gap-3 p-3 border rounded-lg">
-                <Checkbox
-                  checked={item.is_completed}
-                  onCheckedChange={(checked) => handleItemToggle(item, checked)}
-                  className="mt-1"
-                  disabled={updateProgressMutation.isPending}
-                />
-                
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h4 className={`font-medium ${item.is_completed ? 'line-through text-muted-foreground' : ''}`}>
-                      {item.item_name}
-                    </h4>
-                    {item.is_required && (
-                      <Badge variant="outline" className="text-xs">Requerido</Badge>
+            {checklistItems.map((item) => {
+              const isPending = pendingItems.has(item.template_id)
+              const isBeingEdited = selectedItem === item.template_id
+              
+              return (
+                <div key={item.template_id} className={`flex items-start gap-3 p-3 border rounded-lg ${
+                  isPending ? 'bg-yellow-50 border-yellow-200' : ''
+                } ${isBeingEdited ? 'bg-blue-50 border-blue-200' : ''}`}>
+                  <Checkbox
+                    checked={item.is_completed}
+                    onCheckedChange={(checked) => handleItemToggle(item, checked)}
+                    className="mt-1"
+                    disabled={updateProgressMutation.isPending || (selectedItem !== null && selectedItem !== item.template_id)}
+                  />
+                  
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h4 className={`font-medium ${item.is_completed ? 'line-through text-muted-foreground' : ''}`}>
+                        {item.item_name}
+                        {isPending && !isBeingEdited && (
+                          <span className="ml-2 text-xs text-yellow-600">(Guardando...)</span>
+                        )}
+                        {isBeingEdited && (
+                          <span className="ml-2 text-xs text-blue-600">(Agregando notas...)</span>
+                        )}
+                      </h4>
+                      {item.is_required && (
+                        <Badge variant="outline" className="text-xs">Requerido</Badge>
+                      )}
+                      {item.is_completed && (
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                      )}
+                    </div>
+                    
+                    {item.item_description && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {item.item_description}
+                      </p>
                     )}
-                    {item.is_completed && (
-                      <CheckCircle className="h-4 w-4 text-green-500" />
+                    
+                    {item.notes && (
+                      <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
+                        <strong>Notas:</strong> {item.notes}
+                      </div>
+                    )}
+                    
+                    {item.completed_at && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Completado: {new Date(item.completed_at).toLocaleDateString('es-ES')}
+                      </p>
                     )}
                   </div>
-                  
-                  {item.item_description && (
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {item.item_description}
-                    </p>
-                  )}
-                  
-                  {item.notes && (
-                    <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
-                      <strong>Notas:</strong> {item.notes}
-                    </div>
-                  )}
-                  
-                  {item.completed_at && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Completado: {new Date(item.completed_at).toLocaleDateString('es-ES')}
-                    </p>
-                  )}
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
 
         {/* Modal para agregar notas al completar */}
         {selectedItem && (
           <div className="mt-4 p-4 border rounded-lg bg-blue-50">
-            <Label htmlFor="completion-notes" className="text-sm font-medium">
-              Agregar notas (opcional)
-            </Label>
+            <div className="flex items-center gap-2 mb-2">
+              <AlertCircle className="h-4 w-4 text-blue-600" />
+              <Label htmlFor="completion-notes" className="text-sm font-medium text-blue-800">
+                Agregar notas para: {checklistItems?.find(item => item.template_id === selectedItem)?.item_name}
+              </Label>
+            </div>
             <Textarea
               id="completion-notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Escribir notas sobre la completación de este elemento..."
+              placeholder="Escribir notas sobre la completación de este elemento... (opcional)"
               className="mt-2"
             />
             <div className="flex gap-2 mt-3">

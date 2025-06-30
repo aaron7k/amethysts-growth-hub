@@ -1,4 +1,3 @@
-
 import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -57,11 +56,11 @@ export function AlertsPanel({ open, onOpenChange }: AlertsPanelProps) {
     enabled: open
   })
 
-  const markAsReadMutation = useMutation({
+  const markAsSentMutation = useMutation({
     mutationFn: async (alertId: string) => {
       const { error } = await supabase
         .from('alerts')
-        .update({ status: 'read' })
+        .update({ status: 'sent', sent_at: new Date().toISOString() })
         .eq('id', alertId)
 
       if (error) throw error
@@ -69,15 +68,15 @@ export function AlertsPanel({ open, onOpenChange }: AlertsPanelProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['alerts'] })
       toast({
-        title: "Alerta marcada como leída",
-        description: "La alerta ha sido marcada como leída."
+        title: "Alerta procesada",
+        description: "La alerta ha sido marcada como procesada."
       })
     },
     onError: (error) => {
-      console.error('Error marking alert as read:', error)
+      console.error('Error marking alert as sent:', error)
       toast({
         title: "Error",
-        description: "No se pudo marcar la alerta como leída.",
+        description: "No se pudo procesar la alerta.",
         variant: "destructive"
       })
     }
@@ -118,11 +117,9 @@ export function AlertsPanel({ open, onOpenChange }: AlertsPanelProps) {
       case 'pending':
         return <Badge variant="secondary">Pendiente</Badge>
       case 'sent':
-        return <Badge variant="default">Enviado</Badge>
-      case 'read':
-        return <Badge variant="outline">Leído</Badge>
+        return <Badge variant="default">Procesada</Badge>
       case 'failed':
-        return <Badge variant="destructive">Fallido</Badge>
+        return <Badge variant="destructive">Fallida</Badge>
       default:
         return <Badge variant="secondary">{status}</Badge>
     }
@@ -177,10 +174,10 @@ export function AlertsPanel({ open, onOpenChange }: AlertsPanelProps) {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => markAsReadMutation.mutate(alert.id)}
-                        disabled={markAsReadMutation.isPending}
+                        onClick={() => markAsSentMutation.mutate(alert.id)}
+                        disabled={markAsSentMutation.isPending}
                       >
-                        Marcar como leído
+                        Marcar como procesada
                       </Button>
                     )}
                   </div>

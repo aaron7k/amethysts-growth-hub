@@ -88,31 +88,54 @@ const Accelerator = () => {
     }
   })
 
-  // Obtener TODAS las suscripciones activas - sin filtrar por nombre de plan
+  // Obtener TODAS las suscripciones activas - corregir la consulta
   const { data: availableSubscriptions, isLoading: subscriptionsLoading } = useQuery({
     queryKey: ['available-subscriptions'],
     queryFn: async () => {
       console.log('Fetching available subscriptions...')
-      const { data, error } = await supabase
+      
+      // Primero obtener todas las suscripciones activas
+      const { data: allSubscriptions, error: subsError } = await supabase
         .from('subscriptions')
         .select(`
           id,
-          clients!inner (full_name),
-          plans!inner (name)
+          clients!inner (
+            id,
+            full_name
+          ),
+          plans!inner (
+            id,
+            name
+          )
         `)
         .eq('status', 'active')
-        .not('id', 'in', `(
-          SELECT subscription_id 
-          FROM accelerator_programs 
-          WHERE status = 'active'
-        )`)
       
-      if (error) {
-        console.error('Error fetching available subscriptions:', error)
-        throw error
+      if (subsError) {
+        console.error('Error fetching subscriptions:', subsError)
+        throw subsError
       }
-      console.log('Available subscriptions:', data)
-      return data
+      
+      // Luego obtener las suscripciones que ya están en programas activos
+      const { data: existingPrograms, error: programsError } = await supabase
+        .from('accelerator_programs')
+        .select('subscription_id')
+        .eq('status', 'active')
+      
+      if (programsError) {
+        console.error('Error fetching existing programs:', programsError)
+        throw programsError
+      }
+      
+      // Filtrar las suscripciones que no están en programas activos
+      const usedSubscriptionIds = existingPrograms?.map(p => p.subscription_id) || []
+      const availableSubs = allSubscriptions?.filter(sub => 
+        !usedSubscriptionIds.includes(sub.id)
+      ) || []
+      
+      console.log('Available subscriptions:', availableSubs)
+      console.log('Used subscription IDs:', usedSubscriptionIds)
+      
+      return availableSubs
     }
   })
 
@@ -318,19 +341,23 @@ const Accelerator = () => {
                   <Label htmlFor="subscription">Cliente</Label>
                   {subscriptionsLoading ? (
                     <div className="text-sm text-muted-foreground">Cargando clientes...</div>
-                  ) : (
+                  ) : availableSubscriptions && availableSubscriptions.length > 0 ? (
                     <Select value={selectedSubscription} onValueChange={setSelectedSubscription}>
                       <SelectTrigger>
                         <SelectValue placeholder="Seleccionar cliente" />
                       </SelectTrigger>
                       <SelectContent>
-                        {availableSubscriptions?.map((sub) => (
+                        {availableSubscriptions.map((sub) => (
                           <SelectItem key={sub.id} value={sub.id}>
                             {sub.clients?.full_name} - {sub.plans?.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                  ) : (
+                    <div className="text-sm text-muted-foreground">
+                      No hay clientes disponibles para crear programas
+                    </div>
                   )}
                 </div>
                 <div>

@@ -14,6 +14,7 @@ import Dashboard from "./pages/Dashboard";
 import Clients from "./pages/Clients";
 import ClientDetail from "./pages/ClientDetail";
 import Payments from "./pages/Payments";
+import Plans from "./pages/Plans";
 import NewSale from "./pages/NewSale";
 import Onboarding from "./pages/Onboarding";
 import Alerts from "./pages/Alerts";
@@ -46,6 +47,7 @@ const App = () => (
                             <Route path="/clients" element={<Clients />} />
                             <Route path="/clients/:id" element={<ClientDetail />} />
                             <Route path="/payments" element={<Payments />} />
+                            <Route path="/plans" element={<Plans />} />
                             <Route path="/new-sale" element={<NewSale />} />
                             <Route path="/onboarding" element={<Onboarding />} />
                             <Route path="/alerts" element={<Alerts />} />

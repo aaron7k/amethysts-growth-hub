@@ -1,4 +1,3 @@
-
 import { useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -17,13 +16,13 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 
 type InstallmentStatus = 'pending' | 'paid' | 'overdue'
-type PaymentMethod = 'crypto' | 'stripe' | 'bank_transfer' | 'paypal'
+type PaymentMethod = 'crypto' | 'stripe' | 'bank_transfer' | 'paypal' | 'bbva' | 'dolar_app' | 'payoneer' | 'cash' | 'binance' | 'mercado_pago'
 
 const paymentSchema = z.object({
   amount_usd: z.string().min(1, "El monto es requerido"),
   due_date: z.string().min(1, "La fecha de vencimiento es requerida"),
   status: z.enum(['pending', 'paid', 'overdue']),
-  payment_method: z.enum(['crypto', 'stripe', 'bank_transfer', 'paypal']).optional(),
+  payment_method: z.enum(['crypto', 'stripe', 'bank_transfer', 'paypal', 'bbva', 'dolar_app', 'payoneer', 'cash', 'binance', 'mercado_pago']).optional(),
   payment_date: z.string().optional(),
   notes: z.string().optional()
 })
@@ -213,6 +212,22 @@ export default function Payments() {
       'overdue': 'bg-red-100 text-red-800'
     }
     return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800'
+  }
+
+  const getPaymentMethodLabel = (method: string) => {
+    const labels = {
+      'crypto': 'Crypto',
+      'stripe': 'Stripe',
+      'bank_transfer': 'Transferencia',
+      'paypal': 'PayPal',
+      'bbva': 'BBVA',
+      'dolar_app': 'Dólar App',
+      'payoneer': 'Payoneer',
+      'cash': 'Efectivo',
+      'binance': 'Binance',
+      'mercado_pago': 'Mercado Pago'
+    }
+    return labels[method as keyof typeof labels] || method
   }
 
   const getTotalsByStatus = () => {
@@ -406,7 +421,7 @@ export default function Payments() {
                           </Badge>
                         </TableCell>
                         <TableCell className="hidden lg:table-cell text-sm">
-                          {installment.payment_method || '-'}
+                          {installment.payment_method ? getPaymentMethodLabel(installment.payment_method) : '-'}
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-1 sm:gap-2">
@@ -533,6 +548,12 @@ export default function Payments() {
                         <SelectItem value="crypto">Crypto</SelectItem>
                         <SelectItem value="bank_transfer">Transferencia</SelectItem>
                         <SelectItem value="paypal">PayPal</SelectItem>
+                        <SelectItem value="bbva">BBVA</SelectItem>
+                        <SelectItem value="dolar_app">Dólar App</SelectItem>
+                        <SelectItem value="payoneer">Payoneer</SelectItem>
+                        <SelectItem value="cash">Efectivo</SelectItem>
+                        <SelectItem value="binance">Binance</SelectItem>
+                        <SelectItem value="mercado_pago">Mercado Pago</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

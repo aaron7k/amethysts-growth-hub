@@ -1,10 +1,10 @@
-
 import { useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
@@ -20,13 +20,15 @@ const clientSchema = z.object({
   full_name: z.string().min(1, "El nombre es requerido"),
   email: z.string().email("Email inválido"),
   phone_number: z.string().optional(),
-  drive_folder_url: z.string().url("URL inválida").optional().or(z.literal(""))
+  drive_folder_url: z.string().url("URL inválida").optional().or(z.literal("")),
+  client_type: z.enum(['client', 'student', 'accelerator_member'])
 })
 
 type ClientFormData = z.infer<typeof clientSchema>
 
 export default function Clients() {
   const [searchTerm, setSearchTerm] = useState("")
+  const [clientTypeFilter, setClientTypeFilter] = useState<string>("all")
   const [editingClient, setEditingClient] = useState<any>(null)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -40,12 +42,13 @@ export default function Clients() {
       full_name: "",
       email: "",
       phone_number: "",
-      drive_folder_url: ""
+      drive_folder_url: "",
+      client_type: "client"
     }
   })
   
   const { data: clients, isLoading } = useQuery({
-    queryKey: ['clients', searchTerm],
+    queryKey: ['clients', searchTerm, clientTypeFilter],
     queryFn: async () => {
       let query = supabase
         .from('clients')
@@ -57,10 +60,14 @@ export default function Clients() {
             plans(name, plan_type)
           )
         `)
-        .order('created_at', { ascending: false })
+        .order('updated_at', { ascending: false })
 
       if (searchTerm) {
         query = query.or(`full_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`)
+      }
+
+      if (clientTypeFilter !== 'all') {
+        query = query.eq('client_type', clientTypeFilter)
       }
 
       const { data, error } = await query
@@ -135,7 +142,8 @@ export default function Clients() {
       full_name: client.full_name,
       email: client.email,
       phone_number: client.phone_number || "",
-      drive_folder_url: client.drive_folder_url || ""
+      drive_folder_url: client.drive_folder_url || "",
+      client_type: client.client_type || "client"
     })
     setIsEditDialogOpen(true)
   }
@@ -149,6 +157,24 @@ export default function Clients() {
     if (editingClient) {
       updateClientMutation.mutate({ id: editingClient.id, data })
     }
+  }
+
+  const getClientTypeLabel = (type: string) => {
+    const labels = {
+      'client': 'Cliente',
+      'student': 'Alumno',
+      'accelerator_member': 'Miembro Aceleradora'
+    }
+    return labels[type as keyof typeof labels] || type
+  }
+
+  const getClientTypeBadgeColor = (type: string) => {
+    const colors = {
+      'client': 'bg-blue-100 text-blue-800',
+      'student': 'bg-green-100 text-green-800',
+      'accelerator_member': 'bg-purple-100 text-purple-800'
+    }
+    return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800'
   }
 
   return (
@@ -175,20 +201,33 @@ export default function Clients() {
       {/* Search and Filters */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Buscar Clientes</CardTitle>
+          <CardTitle className="text-lg">Buscar y Filtrar Clientes</CardTitle>
           <CardDescription>
-            Encuentra clientes por nombre o email
+            Encuentra clientes por nombre, email o tipo
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input 
-              placeholder="Buscar por nombre o email..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input 
+                placeholder="Buscar por nombre o email..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Select value={clientTypeFilter} onValueChange={setClientTypeFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filtrar por tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los tipos</SelectItem>
+                <SelectItem value="client">Clientes</SelectItem>
+                <SelectItem value="student">Alumnos</SelectItem>
+                <SelectItem value="accelerator_member">Miembros Aceleradora</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
@@ -213,16 +252,18 @@ export default function Clients() {
                   <TableHead>Cliente</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Teléfono</TableHead>
+                  <TableHead>Tipo</TableHead>
                   <TableHead>Suscripciones</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Carpeta Drive</TableHead>
+                  <TableHead>Última Actualización</TableHead>
                   <TableHead>Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {clients?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                       No se encontraron clientes
                     </TableCell>
                   </TableRow>
@@ -237,6 +278,11 @@ export default function Clients() {
                       </TableCell>
                       <TableCell>{client.email}</TableCell>
                       <TableCell>{client.phone_number || '-'}</TableCell>
+                      <TableCell>
+                        <Badge className={getClientTypeBadgeColor(client.client_type || 'client')}>
+                          {getClientTypeLabel(client.client_type || 'client')}
+                        </Badge>
+                      </TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-1">
                           <span className="text-sm font-medium">
@@ -269,6 +315,11 @@ export default function Clients() {
                         ) : (
                           <span className="text-muted-foreground">-</span>
                         )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          {client.updated_at ? new Date(client.updated_at).toLocaleDateString() : '-'}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
@@ -349,6 +400,28 @@ export default function Clients() {
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="client_type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo de Cliente</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona un tipo" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="client">Cliente</SelectItem>
+                        <SelectItem value="student">Alumno</SelectItem>
+                        <SelectItem value="accelerator_member">Miembro Aceleradora</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}

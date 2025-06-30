@@ -264,27 +264,30 @@ export type Database = {
       }
       clients: {
         Row: {
+          client_type: string | null
           created_at: string | null
           drive_folder_url: string | null
-          email: string
+          email: string | null
           full_name: string
           id: string
           phone_number: string | null
           updated_at: string | null
         }
         Insert: {
+          client_type?: string | null
           created_at?: string | null
           drive_folder_url?: string | null
-          email: string
+          email?: string | null
           full_name: string
           id?: string
           phone_number?: string | null
           updated_at?: string | null
         }
         Update: {
+          client_type?: string | null
           created_at?: string | null
           drive_folder_url?: string | null
-          email?: string
+          email?: string | null
           full_name?: string
           id?: string
           phone_number?: string | null
@@ -575,7 +578,17 @@ export type Database = {
         | "stage_change"
         | "stage_overdue"
       installment_status: "pending" | "paid" | "overdue"
-      payment_method: "crypto" | "stripe" | "bank_transfer" | "paypal"
+      payment_method:
+        | "crypto"
+        | "stripe"
+        | "bank_transfer"
+        | "paypal"
+        | "bbva"
+        | "dolar_app"
+        | "payoneer"
+        | "cash"
+        | "binance"
+        | "mercado_pago"
       plan_type: "core" | "renovation"
       subscription_next_step:
         | "in_service"
@@ -714,7 +727,18 @@ export const Constants = {
         "stage_overdue",
       ],
       installment_status: ["pending", "paid", "overdue"],
-      payment_method: ["crypto", "stripe", "bank_transfer", "paypal"],
+      payment_method: [
+        "crypto",
+        "stripe",
+        "bank_transfer",
+        "paypal",
+        "bbva",
+        "dolar_app",
+        "payoneer",
+        "cash",
+        "binance",
+        "mercado_pago",
+      ],
       plan_type: ["core", "renovation"],
       subscription_next_step: [
         "in_service",

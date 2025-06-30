@@ -104,6 +104,20 @@ export function AppSidebar() {
           })}
         </nav>
       </div>
+
+      {/* Spacer to push content to the right when sidebar is present */}
+      <style jsx global>{`
+        body {
+          margin-left: ${collapsed ? '64px' : '256px'};
+          transition: margin-left 0.3s ease;
+        }
+        
+        @media (max-width: 768px) {
+          body {
+            margin-left: 0;
+          }
+        }
+      `}</style>
     </div>
   )
 }

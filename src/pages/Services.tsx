@@ -372,7 +372,7 @@ const Services = () => {
                   <TableBody>
                     {serverServices.map((service) => {
                       const details = service.access_details as any;
-                      const isServerActive = details?.status === 'Activo';
+                      const isServerActive = service.is_active === true;
                       
                       return (
                         <TableRow key={service.id}>
@@ -383,7 +383,7 @@ const Services = () => {
                           <TableCell>{details?.ip || 'N/A'}</TableCell>
                           <TableCell>
                             <Badge variant={isServerActive ? "default" : "secondary"}>
-                              {details?.status || 'N/A'}
+                              {isServerActive ? "Activo" : "Inactivo"}
                             </Badge>
                           </TableCell>
                           <TableCell>{details?.type_server || 'N/A'}</TableCell>
@@ -432,7 +432,7 @@ const Services = () => {
                                       variant="outline"
                                       disabled={serverActionMutation.isPending}
                                     >
-                                      <PowerOff className="h-4 w-4 mr-1" />
+                                      <Power className="h-4 w-4 mr-1" />
                                       Encender
                                     </Button>
                                   </AlertDialogTrigger>

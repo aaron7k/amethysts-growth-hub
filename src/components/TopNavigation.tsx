@@ -72,7 +72,7 @@ export function TopNavigation() {
       
       <div className="flex items-center gap-2 sm:gap-4">
         {/* Mobile search button */}
-        <Button variant="ghost" size="icon" className="sm:hidden" onClick={handleSearchClick}>
+        <Button variant="ghost" size="icon" className="sm:hidden" onClick={() => setSearchOpen(true)}>
           <Search className="h-5 w-5" />
         </Button>
         

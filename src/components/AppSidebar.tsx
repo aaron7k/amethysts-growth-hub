@@ -1,12 +1,12 @@
-
 import { useState, useEffect } from "react"
-import { Home, Users, CreditCard, Plus, UserCheck, Settings, Zap, FileText, ChevronLeft, ChevronRight, BookOpen } from "lucide-react"
+import { Home, Users, CreditCard, Plus, UserCheck, Settings, Zap, FileText, ChevronLeft, ChevronRight, BookOpen, Server } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 
 const mainItems = [
   { title: "Dashboard", url: "/", icon: Home },
   { title: "Clientes", url: "/clients", icon: Users },
   { title: "Suscripciones", url: "/subscriptions", icon: FileText },
+  { title: "Servicios", url: "/services", icon: Server },
   { title: "Pagos", url: "/payments", icon: CreditCard },
   { title: "Planes", url: "/plans", icon: Settings },
   { title: "Nueva Venta", url: "/new-sale", icon: Plus },

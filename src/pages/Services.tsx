@@ -7,8 +7,27 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ExternalLink, Power, Trash2, Pause } from "lucide-react";
+import { ExternalLink, Power, Trash2, Pause, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const Services = () => {
   const { toast } = useToast();
@@ -111,6 +130,120 @@ const Services = () => {
     );
   }
 
+  const GHLDetailsModal = ({ service }: { service: any }) => {
+    const details = service.access_details as any;
+    return (
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button size="sm" variant="outline">
+            <Info className="h-4 w-4 mr-1" />
+            Más detalles
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Detalles de la Cuenta GHL</DialogTitle>
+            <DialogDescription>
+              Información completa de la cuenta de GoHighLevel
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4">
+            <div><strong>ID:</strong> {details?.id || 'N/A'}</div>
+            <div><strong>Company ID:</strong> {details?.companyId || 'N/A'}</div>
+            <div><strong>Nombre:</strong> {details?.firstName || 'N/A'}</div>
+            <div><strong>Apellido:</strong> {details?.lastName || 'N/A'}</div>
+            <div><strong>Email:</strong> {details?.email || 'N/A'}</div>
+            <div><strong>Teléfono:</strong> {details?.phone || 'N/A'}</div>
+            <div><strong>País:</strong> {details?.country || 'N/A'}</div>
+            <div><strong>Idioma:</strong> {details?.locale || 'N/A'}</div>
+            <div><strong>Zona Horaria:</strong> {details?.timezone || 'N/A'}</div>
+            <div><strong>Empresa:</strong> {details?.business?.name || 'N/A'}</div>
+            <div><strong>País de la Empresa:</strong> {details?.business?.country || 'N/A'}</div>
+            <div><strong>Zona Horaria Empresa:</strong> {details?.business?.timezone || 'N/A'}</div>
+            <div><strong>Invitación Automática App:</strong> {details?.automaticMobileAppInvite ? 'Sí' : 'No'}</div>
+          </div>
+          {details?.url && (
+            <div className="mt-4">
+              <Button onClick={() => window.open(details.url, '_blank')}>
+                <ExternalLink className="h-4 w-4 mr-1" />
+                Ir a la Cuenta
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
+  const ServerDetailsModal = ({ service }: { service: any }) => {
+    const details = service.access_details as any;
+    return (
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button size="sm" variant="outline">
+            <Info className="h-4 w-4 mr-1" />
+            Más detalles
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Detalles del Servidor</DialogTitle>
+            <DialogDescription>
+              Información completa del servidor de infraestructura
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 max-h-96 overflow-y-auto">
+            <div><strong>ID:</strong> {details?.Id || 'N/A'}</div>
+            <div><strong>ID Servidor:</strong> {details?.id_server || 'N/A'}</div>
+            <div><strong>Nombre:</strong> {details?.name || 'N/A'}</div>
+            <div><strong>IP:</strong> {details?.ip || 'N/A'}</div>
+            <div><strong>Email:</strong> {details?.mail || 'N/A'}</div>
+            <div><strong>Zona:</strong> {details?.zone || 'N/A'}</div>
+            <div><strong>Imagen:</strong> {details?.image || 'N/A'}</div>
+            <div><strong>Estado:</strong> {details?.status || 'N/A'}</div>
+            <div><strong>Tipo de Servidor:</strong> {details?.type_server || 'N/A'}</div>
+            <div><strong>Creado:</strong> {details?.createdAt || 'N/A'}</div>
+            <div><strong>Actualizado:</strong> {details?.updatedAt || 'N/A'}</div>
+            <div><strong>Clave Secreta:</strong> {details?.secret_key ? '••••••••••••••••' : 'N/A'}</div>
+            <div><strong>Contraseña Root:</strong> {details?.root_password ? '••••••••••••••••' : 'N/A'}</div>
+            <div><strong>Token Easypanel:</strong> {details?.easypanel_token ? '••••••••••••••••' : 'N/A'}</div>
+          </div>
+          {(details?.url_n8n_temporal || details?.url_nocodb_temporal || details?.url_qdrant_temporal || details?.url_flowise_temporal) && (
+            <div className="mt-4 space-y-2">
+              <h4 className="font-semibold">URLs de Servicios:</h4>
+              <div className="grid grid-cols-1 gap-2">
+                {details?.url_n8n_temporal && (
+                  <Button variant="outline" onClick={() => window.open(details.url_n8n_temporal, '_blank')}>
+                    <ExternalLink className="h-4 w-4 mr-1" />
+                    N8N
+                  </Button>
+                )}
+                {details?.url_nocodb_temporal && (
+                  <Button variant="outline" onClick={() => window.open(details.url_nocodb_temporal, '_blank')}>
+                    <ExternalLink className="h-4 w-4 mr-1" />
+                    NocoDB
+                  </Button>
+                )}
+                {details?.url_qdrant_temporal && (
+                  <Button variant="outline" onClick={() => window.open(details.url_qdrant_temporal, '_blank')}>
+                    <ExternalLink className="h-4 w-4 mr-1" />
+                    Qdrant
+                  </Button>
+                )}
+                {details?.url_flowise_temporal && (
+                  <Button variant="outline" onClick={() => window.open(details.url_flowise_temporal, '_blank')}>
+                    <ExternalLink className="h-4 w-4 mr-1" />
+                    Flowise
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -160,7 +293,8 @@ const Services = () => {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 flex-wrap">
+                              <GHLDetailsModal service={service} />
                               {details?.url && (
                                 <Button
                                   size="sm"
@@ -171,15 +305,36 @@ const Services = () => {
                                   Ir a Cuenta
                                 </Button>
                               )}
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => pauseGHLMutation.mutate(details?.id)}
-                                disabled={pauseGHLMutation.isPending}
-                              >
-                                <Pause className="h-4 w-4 mr-1" />
-                                Pausar Subcuenta
-                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    disabled={pauseGHLMutation.isPending}
+                                  >
+                                    <Pause className="h-4 w-4 mr-1" />
+                                    Pausar Subcuenta
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Pausar subcuenta?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Esta acción pausará la subcuenta de GoHighLevel para {service.subscription?.client?.full_name}. 
+                                      ¿Estás seguro de que deseas continuar?
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => pauseGHLMutation.mutate(details?.id)}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      Pausar
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -231,31 +386,74 @@ const Services = () => {
                           <TableCell>{details?.type_server || 'N/A'}</TableCell>
                           <TableCell>{details?.zone || 'N/A'}</TableCell>
                           <TableCell>
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => serverActionMutation.mutate({ 
-                                  serviceId: details?.id_server, 
-                                  action: 'apagar' 
-                                })}
-                                disabled={serverActionMutation.isPending}
-                              >
-                                <Power className="h-4 w-4 mr-1" />
-                                Apagar
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => serverActionMutation.mutate({ 
-                                  serviceId: details?.id_server, 
-                                  action: 'destruir' 
-                                })}
-                                disabled={serverActionMutation.isPending}
-                              >
-                                <Trash2 className="h-4 w-4 mr-1" />
-                                Destruir
-                              </Button>
+                            <div className="flex gap-2 flex-wrap">
+                              <ServerDetailsModal service={service} />
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    disabled={serverActionMutation.isPending}
+                                  >
+                                    <Power className="h-4 w-4 mr-1" />
+                                    Apagar
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Apagar servidor?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Esta acción apagará el servidor {details?.name} para {service.subscription?.client?.full_name}. 
+                                      El servidor se puede volver a encender posteriormente. ¿Continuar?
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => serverActionMutation.mutate({ 
+                                        serviceId: details?.id_server, 
+                                        action: 'apagar' 
+                                      })}
+                                    >
+                                      Apagar
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    disabled={serverActionMutation.isPending}
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-1" />
+                                    Destruir
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Destruir servidor?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      <strong>¡ADVERTENCIA!</strong> Esta acción destruirá permanentemente el servidor {details?.name} 
+                                      para {service.subscription?.client?.full_name}. Todos los datos se perderán y no se podrá recuperar. 
+                                      Esta acción es <strong>irreversible</strong>.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => serverActionMutation.mutate({ 
+                                        serviceId: details?.id_server, 
+                                        action: 'destruir' 
+                                      })}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      Destruir
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             </div>
                           </TableCell>
                         </TableRow>

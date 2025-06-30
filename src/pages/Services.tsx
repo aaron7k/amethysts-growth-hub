@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ExternalLink, Power, Trash2, Pause, Info, PowerOff } from "lucide-react";
+import { ExternalLink, Power, Trash2, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -52,34 +52,35 @@ const Services = () => {
     },
   });
 
-  // Mutation for GHL pause
-  const pauseGHLMutation = useMutation({
-    mutationFn: async (serviceId: string) => {
+  // Mutation for GHL actions
+  const ghlActionMutation = useMutation({
+    mutationFn: async ({ serviceId, action }: { serviceId: string; action: 'encender' | 'apagar' }) => {
       const response = await fetch('https://hooks.infragrowthai.com/webhook/client/pause-ghl', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ id: serviceId }),
+        body: JSON.stringify({ id: serviceId, action }),
       });
       
       if (!response.ok) {
-        throw new Error('Error al pausar la subcuenta');
+        throw new Error(`Error al ${action} la subcuenta`);
       }
       
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
+      const actionText = variables.action === 'encender' ? 'encendida' : 'apagada';
       toast({
-        title: "Subcuenta pausada",
-        description: "La subcuenta de GoHighLevel ha sido pausada exitosamente.",
+        title: `Subcuenta ${actionText}`,
+        description: `La subcuenta de GoHighLevel ha sido ${actionText} exitosamente.`,
       });
       queryClient.invalidateQueries({ queryKey: ['provisioned-services'] });
     },
-    onError: () => {
+    onError: (_, variables) => {
       toast({
         title: "Error",
-        description: "No se pudo pausar la subcuenta. Inténtalo de nuevo.",
+        description: `No se pudo ${variables.action} la subcuenta. Inténtalo de nuevo.`,
         variant: "destructive",
       });
     },
@@ -280,6 +281,8 @@ const Services = () => {
                   <TableBody>
                     {ghlServices.map((service) => {
                       const details = service.access_details as any;
+                      const isGHLActive = service.is_active === true;
+                      
                       return (
                         <TableRow key={service.id}>
                           <TableCell className="font-medium">
@@ -289,8 +292,8 @@ const Services = () => {
                           <TableCell>{details?.email || 'N/A'}</TableCell>
                           <TableCell>{details?.country || 'N/A'}</TableCell>
                           <TableCell>
-                            <Badge variant={service.is_active ? "default" : "secondary"}>
-                              {service.is_active ? "Activo" : "Inactivo"}
+                            <Badge variant={isGHLActive ? "default" : "secondary"}>
+                              {isGHLActive ? "Activo" : "Inactivo"}
                             </Badge>
                           </TableCell>
                           <TableCell>
@@ -306,36 +309,74 @@ const Services = () => {
                                   Ir a Cuenta
                                 </Button>
                               )}
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    disabled={pauseGHLMutation.isPending}
-                                  >
-                                    <Pause className="h-4 w-4 mr-1" />
-                                    Pausar Subcuenta
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>¿Pausar subcuenta?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Esta acción pausará la subcuenta de GoHighLevel para {service.subscription?.client?.full_name}. 
-                                      ¿Estás seguro de que deseas continuar?
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => pauseGHLMutation.mutate(details?.id)}
-                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              {isGHLActive ? (
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      disabled={ghlActionMutation.isPending}
                                     >
-                                      Pausar
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
+                                      <Power className="h-4 w-4 mr-1" />
+                                      Apagar
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>¿Apagar subcuenta?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Esta acción apagará la subcuenta de GoHighLevel para {service.subscription?.client?.full_name}. 
+                                        ¿Estás seguro de que deseas continuar?
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => ghlActionMutation.mutate({ 
+                                          serviceId: details?.id, 
+                                          action: 'apagar' 
+                                        })}
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                      >
+                                        Apagar
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              ) : (
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      disabled={ghlActionMutation.isPending}
+                                    >
+                                      <Power className="h-4 w-4 mr-1" />
+                                      Encender
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>¿Encender subcuenta?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Esta acción encenderá la subcuenta de GoHighLevel para {service.subscription?.client?.full_name}. 
+                                        ¿Continuar?
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => ghlActionMutation.mutate({ 
+                                          serviceId: details?.id, 
+                                          action: 'encender' 
+                                        })}
+                                      >
+                                        Encender
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>

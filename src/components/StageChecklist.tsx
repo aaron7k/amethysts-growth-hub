@@ -60,24 +60,46 @@ const StageChecklist = ({ subscriptionId, stageNumber, stageName, isCurrentStage
     mutationFn: async ({ templateId, isCompleted, notes }: { templateId: string, isCompleted: boolean, notes?: string }) => {
       console.log('Updating progress for template:', templateId, 'completed:', isCompleted)
       
-      const updateData: any = {
-        is_completed: isCompleted,
-        completed_at: isCompleted ? new Date().toISOString() : null,
-        completed_by: isCompleted ? 'current_user' : null, // En producción, usar el ID del usuario actual
-        notes: notes || null,
-        updated_at: new Date().toISOString()
+      if (isCompleted) {
+        // Insertar o actualizar el progreso
+        const { error } = await supabase
+          .from('accelerator_checklist_progress')
+          .upsert({
+            subscription_id: subscriptionId,
+            template_id: templateId,
+            stage_number: stageNumber,
+            is_completed: true,
+            completed_at: new Date().toISOString(),
+            completed_by: 'current_user',
+            notes: notes || null,
+            updated_at: new Date().toISOString()
+          })
+        
+        if (error) {
+          console.error('Error updating progress:', error)
+          throw error
+        }
+      } else {
+        // Eliminar el progreso o marcarlo como no completado
+        const { error } = await supabase
+          .from('accelerator_checklist_progress')
+          .upsert({
+            subscription_id: subscriptionId,
+            template_id: templateId,
+            stage_number: stageNumber,
+            is_completed: false,
+            completed_at: null,
+            completed_by: null,
+            notes: null,
+            updated_at: new Date().toISOString()
+          })
+        
+        if (error) {
+          console.error('Error updating progress:', error)
+          throw error
+        }
       }
-
-      const { error } = await supabase
-        .from('accelerator_checklist_progress')
-        .update(updateData)
-        .eq('subscription_id', subscriptionId)
-        .eq('template_id', templateId)
       
-      if (error) {
-        console.error('Error updating progress:', error)
-        throw error
-      }
       console.log('Progress updated successfully')
     },
     onSuccess: () => {
@@ -99,12 +121,17 @@ const StageChecklist = ({ subscriptionId, stageNumber, stageName, isCurrentStage
     }
   })
 
-  const handleItemToggle = (item: ChecklistItem) => {
-    if (!item.is_completed) {
+  const handleItemToggle = (item: ChecklistItem, checked: boolean | string) => {
+    console.log('Checkbox clicked:', item.item_name, 'checked:', checked)
+    
+    const isChecked = checked === true
+    
+    if (isChecked && !item.is_completed) {
+      // Marcar como completado - mostrar modal para notas
       setSelectedItem(item.template_id)
       setNotes(item.notes || "")
-    } else {
-      // Si ya está completado, permitir desmarcar directamente
+    } else if (!isChecked && item.is_completed) {
+      // Desmarcar - actualizar directamente
       updateProgressMutation.mutate({
         templateId: item.template_id,
         isCompleted: false
@@ -151,7 +178,7 @@ const StageChecklist = ({ subscriptionId, stageNumber, stageName, isCurrentStage
             {isCurrentStage && (
               <Badge className="bg-blue-500">Etapa Actual</Badge>
             )}
-          </div>
+          </div>  
         </div>
       </CardHeader>
       
@@ -166,7 +193,7 @@ const StageChecklist = ({ subscriptionId, stageNumber, stageName, isCurrentStage
               <div key={item.template_id} className="flex items-start gap-3 p-3 border rounded-lg">
                 <Checkbox
                   checked={item.is_completed}
-                  onCheckedChange={() => handleItemToggle(item)}
+                  onCheckedChange={(checked) => handleItemToggle(item, checked)}
                   className="mt-1"
                 />
                 

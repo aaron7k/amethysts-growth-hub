@@ -47,11 +47,11 @@ export function AppSidebar() {
 
   return (
     <Sidebar 
-      className={`${collapsed ? "w-20" : "w-64"} border-r border-border bg-card mr-6`} 
+      className={`${collapsed ? "w-24" : "w-64"} border-r border-border bg-card mr-8`} 
       collapsible="icon"
       variant={isMobile ? "floating" : "sidebar"}
     >
-      <SidebarHeader className="border-b border-border p-4 mb-2">
+      <SidebarHeader className="border-b border-border p-6 mb-4">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
             <span className="text-primary-foreground font-bold text-sm">IG</span>
@@ -65,19 +65,19 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="px-4 py-2">
+      <SidebarContent className="px-6 py-4">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-xs uppercase tracking-wider text-muted-foreground px-2 py-3 mb-2">
+          <SidebarGroupLabel className="text-xs uppercase tracking-wider text-muted-foreground px-2 py-3 mb-3">
             Principal
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu className="space-y-2">
+            <SidebarMenu className="space-y-3">
               {mainItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild className={`h-10 ${collapsed ? "justify-center px-0" : ""}`}>
+                  <SidebarMenuButton asChild className={`h-12 ${collapsed ? "justify-center px-2" : "px-4"}`}>
                     <NavLink 
                       to={item.url} 
-                      className={`flex items-center ${collapsed ? "justify-center" : "gap-3 px-3"} py-2 rounded-lg transition-all duration-200 ${getNavCls(item.url)}`}
+                      className={`flex items-center ${collapsed ? "justify-center" : "gap-4"} py-3 rounded-lg transition-all duration-200 ${getNavCls(item.url)}`}
                     >
                       <item.icon className="h-5 w-5 flex-shrink-0" />
                       {!collapsed && <span className="font-medium">{item.title}</span>}

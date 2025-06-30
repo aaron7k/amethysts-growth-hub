@@ -67,6 +67,7 @@ export function AlertsPanel({ open, onOpenChange }: AlertsPanelProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['alerts'] })
+      queryClient.invalidateQueries({ queryKey: ['pending-alerts-count'] })
       toast({
         title: "Alerta procesada",
         description: "La alerta ha sido marcada como procesada."

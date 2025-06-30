@@ -11,6 +11,8 @@ import { ThemeSwitch } from "@/components/ThemeSwitch"
 import { GlobalSearch } from "@/components/GlobalSearch"
 import { UserProfileModal } from "@/components/UserProfileModal"
 import { AlertsPanel } from "@/components/AlertsPanel"
+import { useQuery } from "@tanstack/react-query"
+import { supabase } from "@/integrations/supabase/client"
 
 export function TopNavigation() {
   const { user, signOut } = useAuth();
@@ -18,6 +20,21 @@ export function TopNavigation() {
   const [searchTerm, setSearchTerm] = useState("");
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [alertsPanelOpen, setAlertsPanelOpen] = useState(false);
+
+  // Query for pending alerts count
+  const { data: pendingAlertsCount = 0 } = useQuery({
+    queryKey: ['pending-alerts-count'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('alerts')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending')
+
+      if (error) throw error
+      return count || 0
+    },
+    refetchInterval: 30000 // Refetch every 30 seconds
+  })
 
   const handleSignOut = async () => {
     await signOut();
@@ -86,9 +103,11 @@ export function TopNavigation() {
           
           <Button variant="ghost" size="icon" className="relative" onClick={() => setAlertsPanelOpen(true)}>
             <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
-            <span className="absolute -top-1 -right-1 h-3 w-3 sm:h-4 sm:w-4 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center">
-              3
-            </span>
+            {pendingAlertsCount > 0 && (
+              <span className="absolute -top-1 -right-1 h-3 w-3 sm:h-4 sm:w-4 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center">
+                {pendingAlertsCount > 99 ? '99+' : pendingAlertsCount}
+              </span>
+            )}
           </Button>
           
           <DropdownMenu>

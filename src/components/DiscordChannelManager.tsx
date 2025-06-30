@@ -27,7 +27,7 @@ const DiscordChannelManager = ({ subscriptionId, clientName }: DiscordChannelMan
   const [open, setOpen] = useState(false)
   const queryClient = useQueryClient()
 
-  // Obtener servicios de Discord provisionados
+  // Obtener servicios de Discord provisionados para esta suscripción específica
   const { data: discordServices, isLoading } = useQuery({
     queryKey: ['provisioned-services', subscriptionId, 'discord'],
     queryFn: async () => {
@@ -43,7 +43,7 @@ const DiscordChannelManager = ({ subscriptionId, clientName }: DiscordChannelMan
         console.error('Error fetching Discord services:', error)
         throw error
       }
-      console.log('Discord services fetched:', data)
+      console.log('Discord services fetched for subscription', subscriptionId, ':', data)
       return data as ProvisionedService[]
     },
     enabled: open
@@ -136,6 +136,9 @@ const DiscordChannelManager = ({ subscriptionId, clientName }: DiscordChannelMan
                       <CardTitle className="text-lg">Canal de Discord</CardTitle>
                       <p className="text-sm text-muted-foreground">
                         Creado: {new Date(service.provisioned_at).toLocaleDateString('es-ES')}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        ID: {service.id}
                       </p>
                     </div>
                     <Badge variant="outline" className="bg-green-50">

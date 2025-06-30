@@ -40,9 +40,9 @@ const App = () => (
                   <SidebarProvider>
                     <div className="min-h-screen flex w-full bg-background">
                       <AppSidebar />
-                      <div className="flex-1 flex flex-col ml-64">
+                      <div className="flex-1 flex flex-col">
                         <TopNavigation />
-                        <main className="flex-1 p-6 pt-6">
+                        <main className="flex-1 p-6 pt-6" style={{ marginLeft: '256px' }}>
                           <Routes>
                             <Route path="/" element={<Dashboard />} />
                             <Route path="/clients" element={<Clients />} />

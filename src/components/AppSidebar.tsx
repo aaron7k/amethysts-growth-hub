@@ -1,3 +1,4 @@
+
 import { useState } from "react"
 import { Home, Users, CreditCard, Plus, UserCheck, Settings, Zap, FileText, ChevronLeft, ChevronRight } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
@@ -26,7 +27,7 @@ export function AppSidebar() {
   }
 
   return (
-    <div className={`bg-card border-r border-border transition-all duration-300 flex flex-col ${
+    <div className={`fixed left-0 top-0 h-screen bg-card border-r border-border transition-all duration-300 flex flex-col z-40 ${
       collapsed ? 'w-16' : 'w-64'
     }`}>
       {/* Header */}
@@ -65,7 +66,7 @@ export function AppSidebar() {
       )}
 
       {/* Navigation */}
-      <div className="flex-1 p-2">
+      <div className="flex-1 p-2 overflow-y-auto">
         {!collapsed && (
           <div className="text-xs uppercase tracking-wider text-muted-foreground px-2 py-2 mb-2">
             Principal

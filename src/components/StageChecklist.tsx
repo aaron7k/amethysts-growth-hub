@@ -33,6 +33,7 @@ interface ChecklistItem {
 const StageChecklist = ({ subscriptionId, stageNumber, stageName, isCurrentStage }: StageChecklistProps) => {
   const [selectedItem, setSelectedItem] = useState<string | null>(null)
   const [notes, setNotes] = useState<string>("")
+  const [optimisticUpdates, setOptimisticUpdates] = useState<Record<string, boolean>>({})
   const queryClient = useQueryClient()
 
   // Obtener el progreso del checklist para esta etapa
@@ -110,9 +111,13 @@ const StageChecklist = ({ subscriptionId, stageNumber, stageName, isCurrentStage
       })
       setSelectedItem(null)
       setNotes("")
+      // Limpiar las actualizaciones optimistas
+      setOptimisticUpdates({})
     },
     onError: (error) => {
       console.error('Failed to update progress:', error)
+      // Revertir la actualización optimista en caso de error
+      setOptimisticUpdates({})
       toast({
         title: "Error",
         description: "No se pudo actualizar el progreso",
@@ -125,6 +130,12 @@ const StageChecklist = ({ subscriptionId, stageNumber, stageName, isCurrentStage
     console.log('Checkbox clicked:', item.item_name, 'checked:', checked)
     
     const isChecked = checked === true
+    
+    // Actualización optimista inmediata
+    setOptimisticUpdates(prev => ({
+      ...prev,
+      [item.template_id]: isChecked
+    }))
     
     if (isChecked && !item.is_completed) {
       // Marcar como completado - mostrar modal para notas
@@ -149,7 +160,28 @@ const StageChecklist = ({ subscriptionId, stageNumber, stageName, isCurrentStage
     }
   }
 
-  const completedCount = checklistItems?.filter(item => item.is_completed).length || 0
+  const handleCancelNotes = () => {
+    // Revertir la actualización optimista
+    setOptimisticUpdates(prev => {
+      const newState = { ...prev }
+      if (selectedItem) {
+        delete newState[selectedItem]
+      }
+      return newState
+    })
+    setSelectedItem(null)
+    setNotes("")
+  }
+
+  // Función para obtener el estado actual del checkbox (con actualización optimista)
+  const getItemCheckedState = (item: ChecklistItem) => {
+    if (item.template_id in optimisticUpdates) {
+      return optimisticUpdates[item.template_id]
+    }
+    return item.is_completed
+  }
+
+  const completedCount = checklistItems?.filter(item => getItemCheckedState(item)).length || 0
   const totalCount = checklistItems?.length || 0
   const progressPercentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
 
@@ -189,47 +221,50 @@ const StageChecklist = ({ subscriptionId, stageNumber, stageName, isCurrentStage
           </div>
         ) : (
           <div className="space-y-3">
-            {checklistItems.map((item) => (
-              <div key={item.template_id} className="flex items-start gap-3 p-3 border rounded-lg">
-                <Checkbox
-                  checked={item.is_completed}
-                  onCheckedChange={(checked) => handleItemToggle(item, checked)}
-                  className="mt-1"
-                />
-                
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h4 className={`font-medium ${item.is_completed ? 'line-through text-muted-foreground' : ''}`}>
-                      {item.item_name}
-                    </h4>
-                    {item.is_required && (
-                      <Badge variant="outline" className="text-xs">Requerido</Badge>
+            {checklistItems.map((item) => {
+              const isItemChecked = getItemCheckedState(item)
+              return (
+                <div key={item.template_id} className="flex items-start gap-3 p-3 border rounded-lg">
+                  <Checkbox
+                    checked={isItemChecked}
+                    onCheckedChange={(checked) => handleItemToggle(item, checked)}
+                    className="mt-1"
+                  />
+                  
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h4 className={`font-medium ${isItemChecked ? 'line-through text-muted-foreground' : ''}`}>
+                        {item.item_name}
+                      </h4>
+                      {item.is_required && (
+                        <Badge variant="outline" className="text-xs">Requerido</Badge>
+                      )}
+                      {isItemChecked && (
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                      )}
+                    </div>
+                    
+                    {item.item_description && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {item.item_description}
+                      </p>
                     )}
-                    {item.is_completed && (
-                      <CheckCircle className="h-4 w-4 text-green-500" />
+                    
+                    {item.notes && (
+                      <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
+                        <strong>Notas:</strong> {item.notes}
+                      </div>
+                    )}
+                    
+                    {item.completed_at && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Completado: {new Date(item.completed_at).toLocaleDateString('es-ES')}
+                      </p>
                     )}
                   </div>
-                  
-                  {item.item_description && (
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {item.item_description}
-                    </p>
-                  )}
-                  
-                  {item.notes && (
-                    <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
-                      <strong>Notas:</strong> {item.notes}
-                    </div>
-                  )}
-                  
-                  {item.completed_at && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Completado: {new Date(item.completed_at).toLocaleDateString('es-ES')}
-                    </p>
-                  )}
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
 
@@ -256,10 +291,7 @@ const StageChecklist = ({ subscriptionId, stageNumber, stageName, isCurrentStage
               </Button>
               <Button
                 variant="outline"
-                onClick={() => {
-                  setSelectedItem(null)
-                  setNotes("")
-                }}
+                onClick={handleCancelNotes}
                 size="sm"
               >
                 Cancelar

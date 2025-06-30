@@ -3,49 +3,19 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { toast } from 'sonner';
-
-const planSchema = z.object({
-  name: z.string().min(1, "El nombre es requerido"),
-  description: z.string().optional(),
-  price_usd: z.number().min(0, "El precio debe ser mayor a 0"),
-  duration_days: z.number().min(1, "La duración debe ser mayor a 0"),
-  plan_type: z.enum(['core', 'renovation']),
-  is_active: z.boolean()
-});
-
-type PlanFormData = z.infer<typeof planSchema>;
+import { PlanForm, PlanFormData } from '@/components/PlanForm';
 
 const Plans = () => {
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<any>(null);
-
-  const form = useForm<PlanFormData>({
-    resolver: zodResolver(planSchema),
-    defaultValues: {
-      name: "",
-      description: "",
-      price_usd: 0,
-      duration_days: 30,
-      plan_type: "core",
-      is_active: true
-    }
-  });
 
   // Fetch plans
   const { data: plans, isLoading } = useQuery({
@@ -85,7 +55,6 @@ const Plans = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['plans'] });
       setIsCreateDialogOpen(false);
-      form.reset();
       toast.success('Plan creado exitosamente');
     },
     onError: (error) => {
@@ -119,7 +88,6 @@ const Plans = () => {
       queryClient.invalidateQueries({ queryKey: ['plans'] });
       setIsEditDialogOpen(false);
       setEditingPlan(null);
-      form.reset();
       toast.success('Plan actualizado exitosamente');
     },
     onError: (error) => {
@@ -146,24 +114,18 @@ const Plans = () => {
     }
   });
 
-  const onSubmit = (data: PlanFormData) => {
+  const handleCreateSubmit = (data: PlanFormData) => {
+    createPlanMutation.mutate(data);
+  };
+
+  const handleEditSubmit = (data: PlanFormData) => {
     if (editingPlan) {
       updatePlanMutation.mutate({ ...data, id: editingPlan.id });
-    } else {
-      createPlanMutation.mutate(data);
     }
   };
 
   const handleEdit = (plan: any) => {
     setEditingPlan(plan);
-    form.reset({
-      name: plan.name,
-      description: plan.description || "",
-      price_usd: plan.price_usd,
-      duration_days: plan.duration_days,
-      plan_type: plan.plan_type,
-      is_active: plan.is_active
-    });
     setIsEditDialogOpen(true);
   };
 
@@ -173,140 +135,14 @@ const Plans = () => {
     }
   };
 
-  const PlanForm = () => (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nombre del Plan</FormLabel>
-              <FormControl>
-                <Input placeholder="Ej: Plan Core Básico" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Descripción</FormLabel>
-              <FormControl>
-                <Textarea placeholder="Descripción del plan..." {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+  const handleCreateCancel = () => {
+    setIsCreateDialogOpen(false);
+  };
 
-        <div className="grid grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="price_usd"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Precio (USD)</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number" 
-                    placeholder="0"
-                    {...field}
-                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="duration_days"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Duración (días)</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number" 
-                    placeholder="30"
-                    {...field}
-                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <FormField
-          control={form.control}
-          name="plan_type"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Tipo de Plan</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona el tipo de plan" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="core">Core</SelectItem>
-                  <SelectItem value="renovation">Renovación</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="is_active"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-              <div className="space-y-0.5">
-                <FormLabel className="text-base">Plan Activo</FormLabel>
-                <div className="text-sm text-muted-foreground">
-                  Determina si el plan está disponible para nuevas suscripciones
-                </div>
-              </div>
-              <FormControl>
-                <Switch
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
-
-        <div className="flex justify-end space-x-2">
-          <Button 
-            type="button" 
-            variant="outline" 
-            onClick={() => {
-              setIsCreateDialogOpen(false);
-              setIsEditDialogOpen(false);
-              setEditingPlan(null);
-              form.reset();
-            }}
-          >
-            Cancelar
-          </Button>
-          <Button type="submit" disabled={createPlanMutation.isPending || updatePlanMutation.isPending}>
-            {editingPlan ? 'Actualizar' : 'Crear'} Plan
-          </Button>
-        </div>
-      </form>
-    </Form>
-  );
+  const handleEditCancel = () => {
+    setIsEditDialogOpen(false);
+    setEditingPlan(null);
+  };
 
   if (isLoading) {
     return <div className="flex justify-center items-center h-64">Cargando planes...</div>;
@@ -331,7 +167,12 @@ const Plans = () => {
             <DialogHeader>
               <DialogTitle>Crear Nuevo Plan</DialogTitle>
             </DialogHeader>
-            <PlanForm />
+            <PlanForm
+              onSubmit={handleCreateSubmit}
+              onCancel={handleCreateCancel}
+              isSubmitting={createPlanMutation.isPending}
+              submitButtonText="Crear Plan"
+            />
           </DialogContent>
         </Dialog>
       </div>
@@ -406,7 +247,20 @@ const Plans = () => {
           <DialogHeader>
             <DialogTitle>Editar Plan</DialogTitle>
           </DialogHeader>
-          <PlanForm />
+          <PlanForm
+            onSubmit={handleEditSubmit}
+            onCancel={handleEditCancel}
+            defaultValues={editingPlan ? {
+              name: editingPlan.name,
+              description: editingPlan.description || "",
+              price_usd: editingPlan.price_usd,
+              duration_days: editingPlan.duration_days,
+              plan_type: editingPlan.plan_type,
+              is_active: editingPlan.is_active
+            } : undefined}
+            isSubmitting={updatePlanMutation.isPending}
+            submitButtonText="Actualizar Plan"
+          />
         </DialogContent>
       </Dialog>
     </div>

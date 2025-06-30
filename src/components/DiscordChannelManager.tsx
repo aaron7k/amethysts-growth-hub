@@ -174,6 +174,7 @@ const DiscordChannelManager = ({ subscriptionId, clientName }: DiscordChannelMan
   })
 
   const activeChannels = discordServices?.filter(service => service.is_active) || []
+  const hasActiveChannel = activeChannels.length > 0
 
   console.log('Active channels for render:', activeChannels)
 
@@ -190,24 +191,26 @@ const DiscordChannelManager = ({ subscriptionId, clientName }: DiscordChannelMan
           )}
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Canales de Discord - {clientName}</DialogTitle>
+          <DialogTitle>Canal de Discord - {clientName}</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <p className="text-sm text-muted-foreground">
-              Suscripción ID: {subscriptionId}
+              Estado del canal
             </p>
-            <Button
-              onClick={() => createChannelMutation.mutate()}
-              disabled={createChannelMutation.isPending}
-              size="sm"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              {createChannelMutation.isPending ? 'Creando...' : 'Crear Canal'}
-            </Button>
+            {!hasActiveChannel && (
+              <Button
+                onClick={() => createChannelMutation.mutate()}
+                disabled={createChannelMutation.isPending}
+                size="sm"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                {createChannelMutation.isPending ? 'Creando...' : 'Crear Canal'}
+              </Button>
+            )}
           </div>
 
           {error && (
@@ -218,12 +221,12 @@ const DiscordChannelManager = ({ subscriptionId, clientName }: DiscordChannelMan
           
           {isLoading ? (
             <div className="text-center p-4">
-              <p className="text-muted-foreground">Cargando canales...</p>
+              <p className="text-muted-foreground">Cargando...</p>
             </div>
-          ) : activeChannels.length === 0 ? (
+          ) : !hasActiveChannel ? (
             <div className="text-center p-4">
               <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">No hay canales de Discord activos</p>
+              <p className="text-muted-foreground">No hay canal de Discord activo</p>
               <p className="text-xs text-muted-foreground mt-2">
                 Haz clic en "Crear Canal" para crear uno nuevo
               </p>
@@ -234,15 +237,9 @@ const DiscordChannelManager = ({ subscriptionId, clientName }: DiscordChannelMan
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle className="text-lg">Canal de Discord</CardTitle>
+                      <CardTitle className="text-lg">Canal Activo</CardTitle>
                       <p className="text-sm text-muted-foreground">
                         Creado: {new Date(service.provisioned_at).toLocaleDateString('es-ES')}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        ID: {service.id}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Suscripción: {service.subscription_id}
                       </p>
                     </div>
                     <Badge variant="outline" className="bg-green-50">
@@ -251,17 +248,6 @@ const DiscordChannelManager = ({ subscriptionId, clientName }: DiscordChannelMan
                   </div>
                 </CardHeader>
                 <CardContent>
-                  {service.access_details && (
-                    <div className="mb-4">
-                      <h4 className="font-medium mb-2">Detalles de acceso:</h4>
-                      <div className="bg-muted p-3 rounded-md">
-                        <pre className="text-sm whitespace-pre-wrap">
-                          {JSON.stringify(service.access_details, null, 2)}
-                        </pre>
-                      </div>
-                    </div>
-                  )}
-                  
                   <div className="flex justify-end">
                     <AlertDialog>
                       <AlertDialogTrigger asChild>

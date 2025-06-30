@@ -10,12 +10,14 @@ import { useAuth } from "@/hooks/useAuth"
 import { ThemeSwitch } from "@/components/ThemeSwitch"
 import { GlobalSearch } from "@/components/GlobalSearch"
 import { UserProfileModal } from "@/components/UserProfileModal"
+import { AlertsPanel } from "@/components/AlertsPanel"
 
 export function TopNavigation() {
   const { user, signOut } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [alertsPanelOpen, setAlertsPanelOpen] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -53,7 +55,7 @@ export function TopNavigation() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-40 h-14 sm:h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center justify-between px-4 sm:px-6">
+      <header className="sticky top-0 z-50 h-14 sm:h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center justify-between px-4 sm:px-6">
         <div className="flex items-center gap-2 sm:gap-4">
           <SidebarTrigger className="h-8 w-8" />
           <div className="relative hidden sm:block">
@@ -82,7 +84,7 @@ export function TopNavigation() {
           {/* Theme Switch */}
           <ThemeSwitch />
           
-          <Button variant="ghost" size="icon" className="relative">
+          <Button variant="ghost" size="icon" className="relative" onClick={() => setAlertsPanelOpen(true)}>
             <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
             <span className="absolute -top-1 -right-1 h-3 w-3 sm:h-4 sm:w-4 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center">
               3
@@ -128,6 +130,12 @@ export function TopNavigation() {
       <UserProfileModal 
         open={profileModalOpen}
         onOpenChange={setProfileModalOpen}
+      />
+
+      {/* Alerts Panel */}
+      <AlertsPanel 
+        open={alertsPanelOpen}
+        onOpenChange={setAlertsPanelOpen}
       />
     </>
   )

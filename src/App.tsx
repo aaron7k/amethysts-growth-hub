@@ -42,7 +42,7 @@ const App = () => (
                       <AppSidebar />
                       <div className="flex-1 flex flex-col">
                         <TopNavigation />
-                        <main className="flex-1 p-6 pt-20 sm:pt-22">
+                        <main className="flex-1 p-6 pt-6">
                           <Routes>
                             <Route path="/" element={<Dashboard />} />
                             <Route path="/clients" element={<Clients />} />

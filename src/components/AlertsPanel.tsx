@@ -3,10 +3,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
-import { Bell, Clock, AlertTriangle, CheckCircle, X } from "lucide-react"
+import { Bell, Clock, AlertTriangle, CheckCircle, X, CheckCheck } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 
@@ -58,12 +59,17 @@ export function AlertsPanel({ open, onOpenChange }: AlertsPanelProps) {
 
   const markAsSentMutation = useMutation({
     mutationFn: async (alertId: string) => {
+      console.log('Marking alert as sent:', alertId)
       const { error } = await supabase
         .from('alerts')
         .update({ status: 'sent', sent_at: new Date().toISOString() })
         .eq('id', alertId)
 
-      if (error) throw error
+      if (error) {
+        console.error('Error updating alert:', error)
+        throw error
+      }
+      console.log('Alert marked as sent successfully')
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['alerts'] })
@@ -78,6 +84,38 @@ export function AlertsPanel({ open, onOpenChange }: AlertsPanelProps) {
       toast({
         title: "Error",
         description: "No se pudo procesar la alerta.",
+        variant: "destructive"
+      })
+    }
+  })
+
+  const markAllAsSentMutation = useMutation({
+    mutationFn: async () => {
+      console.log('Marking all pending alerts as sent')
+      const { error } = await supabase
+        .from('alerts')
+        .update({ status: 'sent', sent_at: new Date().toISOString() })
+        .eq('status', 'pending')
+
+      if (error) {
+        console.error('Error updating all alerts:', error)
+        throw error
+      }
+      console.log('All alerts marked as sent successfully')
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['alerts'] })
+      queryClient.invalidateQueries({ queryKey: ['pending-alerts-count'] })
+      toast({
+        title: "Todas las alertas procesadas",
+        description: "Todas las alertas pendientes han sido marcadas como procesadas."
+      })
+    },
+    onError: (error) => {
+      console.error('Error marking all alerts as sent:', error)
+      toast({
+        title: "Error",
+        description: "No se pudieron procesar todas las alertas.",
         variant: "destructive"
       })
     }
@@ -137,6 +175,37 @@ export function AlertsPanel({ open, onOpenChange }: AlertsPanelProps) {
             Alertas ({pendingAlerts.length} pendientes)
           </DialogTitle>
         </DialogHeader>
+        
+        {pendingAlerts.length > 0 && (
+          <div className="flex justify-end mb-4">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  disabled={markAllAsSentMutation.isPending}
+                >
+                  <CheckCheck className="h-4 w-4 mr-2" />
+                  Marcar todas como leídas
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esto marcará todas las {pendingAlerts.length} alertas pendientes como procesadas. Esta acción no se puede deshacer.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => markAllAsSentMutation.mutate()}>
+                    Confirmar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        )}
         
         <ScrollArea className="h-96">
           <div className="space-y-4">

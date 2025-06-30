@@ -1,3 +1,4 @@
+
 import { useState } from "react"
 import { Home, Users, CreditCard, Plus, UserCheck, Settings, Zap } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
@@ -20,6 +21,7 @@ const mainItems = [
   { title: "Dashboard", url: "/", icon: Home },
   { title: "Clientes", url: "/clients", icon: Users },
   { title: "Pagos", url: "/payments", icon: CreditCard },
+  { title: "Planes", url: "/plans", icon: Settings },
   { title: "Nueva Venta", url: "/new-sale", icon: Plus },
   { title: "Onboarding", url: "/onboarding", icon: UserCheck },
   { title: "Aceleradora", url: "/accelerator", icon: Zap },

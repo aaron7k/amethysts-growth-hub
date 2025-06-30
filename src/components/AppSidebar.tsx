@@ -1,5 +1,5 @@
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Home, Users, CreditCard, Plus, UserCheck, Settings, Zap, FileText, ChevronLeft, ChevronRight } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 
@@ -19,6 +19,14 @@ export function AppSidebar() {
   const location = useLocation()
   const currentPath = location.pathname
 
+  // Update CSS custom property when collapsed state changes
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      '--sidebar-width', 
+      collapsed ? '4rem' : '16rem'
+    )
+  }, [collapsed])
+
   const isActive = (path: string) => {
     if (path === "/") {
       return currentPath === "/"
@@ -29,7 +37,7 @@ export function AppSidebar() {
   return (
     <div className={`fixed left-0 top-0 h-screen bg-card border-r border-border transition-all duration-300 flex flex-col z-40 ${
       collapsed ? 'w-16' : 'w-64'
-    }`}>
+    }`} style={{ position: 'sticky' }}>
       {/* Header */}
       <div className="border-b border-border p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">

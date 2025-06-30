@@ -96,7 +96,7 @@ export default function Dashboard() {
         <div>
           <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
           <p className="text-muted-foreground mt-2">
-            Resumen general del sistema InfraGrowth CRM
+            Resumen general de Infragrowth
           </p>
         </div>
         <Link to="/new-sale">

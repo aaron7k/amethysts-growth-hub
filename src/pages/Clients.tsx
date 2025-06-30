@@ -21,7 +21,8 @@ const clientSchema = z.object({
   email: z.string().email("Email inválido"),
   phone_number: z.string().optional(),
   drive_folder_url: z.string().url("URL inválida").optional().or(z.literal("")),
-  client_type: z.enum(['client', 'student', 'accelerator_member'])
+  client_type: z.enum(['client', 'student', 'accelerator_member']),
+  status: z.boolean()
 })
 
 type ClientFormData = z.infer<typeof clientSchema>
@@ -44,7 +45,8 @@ export default function Clients() {
       email: "",
       phone_number: "",
       drive_folder_url: "",
-      client_type: "client"
+      client_type: "client",
+      status: false
     }
   })
   
@@ -144,7 +146,8 @@ export default function Clients() {
       email: client.email,
       phone_number: client.phone_number || "",
       drive_folder_url: client.drive_folder_url || "",
-      client_type: client.client_type || "client"
+      client_type: client.client_type || "client",
+      status: client.status || false
     })
     setIsEditDialogOpen(true)
   }
@@ -230,7 +233,7 @@ export default function Clients() {
                 <SelectItem value="all">Todos los tipos</SelectItem>
                 <SelectItem value="client">Clientes</SelectItem>
                 <SelectItem value="student">Alumnos</SelectItem>
-                <SelectItem value="accelerator_member">Miembros Aceleradora</SelectItem>
+                <SelectItem value="accelerator_member">Miembro Aceleradora</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -314,10 +317,10 @@ export default function Clients() {
                       </TableCell>
                       <TableCell>
                         <Badge 
-                          variant={client.activeSubscriptions > 0 ? "default" : "secondary"}
-                          className={client.activeSubscriptions > 0 ? "bg-green-100 text-green-800" : ""}
+                          variant={client.status ? "default" : "secondary"}
+                          className={client.status ? "bg-green-100 text-green-800" : ""}
                         >
-                          {client.activeSubscriptions > 0 ? 'Activo' : 'Inactivo'}
+                          {client.status ? 'Activo' : 'Inactivo'}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -442,6 +445,30 @@ export default function Clients() {
                       </SelectContent>
                     </Select>
                     <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">
+                        Estado del Cliente
+                      </FormLabel>
+                      <div className="text-sm text-muted-foreground">
+                        Activa o desactiva el estado del cliente
+                      </div>
+                    </div>
+                    <FormControl>
+                      <input
+                        type="checkbox"
+                        checked={field.value}
+                        onChange={field.onChange}
+                        className="h-4 w-4 rounded border-gray-300"
+                      />
+                    </FormControl>
                   </FormItem>
                 )}
               />

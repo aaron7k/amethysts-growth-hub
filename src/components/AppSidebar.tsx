@@ -47,13 +47,13 @@ export function AppSidebar() {
 
   return (
     <Sidebar 
-      className={`${collapsed ? "w-16" : "w-64"} border-r border-border bg-card mr-6`} 
+      className={`${collapsed ? "w-20" : "w-64"} border-r border-border bg-card mr-6`} 
       collapsible="icon"
       variant={isMobile ? "floating" : "sidebar"}
     >
       <SidebarHeader className="border-b border-border p-4 mb-2">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
             <span className="text-primary-foreground font-bold text-sm">IG</span>
           </div>
           {!collapsed && (
@@ -74,12 +74,12 @@ export function AppSidebar() {
             <SidebarMenu className="space-y-2">
               {mainItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild className="h-10">
+                  <SidebarMenuButton asChild className={`h-10 ${collapsed ? "justify-center px-0" : ""}`}>
                     <NavLink 
                       to={item.url} 
-                      className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 ${getNavCls(item.url)}`}
+                      className={`flex items-center ${collapsed ? "justify-center" : "gap-3 px-3"} py-2 rounded-lg transition-all duration-200 ${getNavCls(item.url)}`}
                     >
-                      <item.icon className={`h-5 w-5 ${collapsed ? "mx-auto" : ""}`} />
+                      <item.icon className="h-5 w-5 flex-shrink-0" />
                       {!collapsed && <span className="font-medium">{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>

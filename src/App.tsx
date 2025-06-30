@@ -5,55 +5,49 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { AuthProvider } from "@/hooks/useAuth";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import { AppSidebar } from "@/components/AppSidebar";
 import { TopNavigation } from "@/components/TopNavigation";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import { AuthProvider } from "@/hooks/useAuth";
-import Index from "./pages/Index";
-import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Clients from "./pages/Clients";
 import ClientDetail from "./pages/ClientDetail";
-import NewSale from "./pages/NewSale";
 import Payments from "./pages/Payments";
-import Alerts from "./pages/Alerts";
+import NewSale from "./pages/NewSale";
 import Onboarding from "./pages/Onboarding";
+import Alerts from "./pages/Alerts";
 import Accelerator from "./pages/Accelerator";
-import AcceleratorSettings from "./pages/AcceleratorSettings";
-import PendingApproval from "./pages/PendingApproval";
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <AuthProvider>
           <Routes>
             <Route path="/auth" element={<Auth />} />
-            <Route path="/pending-approval" element={<PendingApproval />} />
             <Route path="/*" element={
               <ProtectedRoute>
                 <SidebarProvider>
-                  <div className="min-h-screen flex w-full">
+                  <div className="min-h-screen flex w-full bg-background">
                     <AppSidebar />
                     <div className="flex-1 flex flex-col">
                       <TopNavigation />
-                      <main className="flex-1">
+                      <main className="flex-1 p-6">
                         <Routes>
-                          <Route path="/" element={<Index />} />
-                          <Route path="/dashboard" element={<Dashboard />} />
+                          <Route path="/" element={<Dashboard />} />
                           <Route path="/clients" element={<Clients />} />
                           <Route path="/clients/:id" element={<ClientDetail />} />
-                          <Route path="/new-sale" element={<NewSale />} />
                           <Route path="/payments" element={<Payments />} />
-                          <Route path="/alerts" element={<Alerts />} />
+                          <Route path="/new-sale" element={<NewSale />} />
                           <Route path="/onboarding" element={<Onboarding />} />
+                          <Route path="/alerts" element={<Alerts />} />
                           <Route path="/accelerator" element={<Accelerator />} />
-                          <Route path="/accelerator-settings" element={<AcceleratorSettings />} />
                           <Route path="*" element={<NotFound />} />
                         </Routes>
                       </main>
@@ -63,9 +57,9 @@ const App = () => (
               </ProtectedRoute>
             } />
           </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </TooltipProvider>
   </QueryClientProvider>
 );
 

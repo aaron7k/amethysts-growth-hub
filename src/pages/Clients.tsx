@@ -30,6 +30,7 @@ type ClientFormData = z.infer<typeof clientSchema>
 export default function Clients() {
   const [searchTerm, setSearchTerm] = useState("")
   const [clientTypeFilter, setClientTypeFilter] = useState<string>("all")
+  const [statusFilter, setStatusFilter] = useState<string>("all")
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [editingClient, setEditingClient] = useState<any>(null)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
@@ -51,7 +52,7 @@ export default function Clients() {
   })
   
   const { data: clients, isLoading } = useQuery({
-    queryKey: ['clients', searchTerm, clientTypeFilter, sortOrder],
+    queryKey: ['clients', searchTerm, clientTypeFilter, statusFilter, sortOrder],
     queryFn: async () => {
       let query = supabase
         .from('clients')
@@ -71,6 +72,10 @@ export default function Clients() {
 
       if (clientTypeFilter !== 'all') {
         query = query.eq('client_type', clientTypeFilter)
+      }
+
+      if (statusFilter !== 'all') {
+        query = query.eq('status', statusFilter === 'active')
       }
 
       const { data, error } = await query
@@ -211,11 +216,11 @@ export default function Clients() {
         <CardHeader>
           <CardTitle className="text-lg">Buscar y Filtrar Clientes</CardTitle>
           <CardDescription>
-            Encuentra clientes por nombre, email o tipo
+            Encuentra clientes por nombre, email, tipo o estado
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input 
@@ -234,6 +239,16 @@ export default function Clients() {
                 <SelectItem value="client">Clientes</SelectItem>
                 <SelectItem value="student">Alumnos</SelectItem>
                 <SelectItem value="accelerator_member">Miembro Aceleradora</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filtrar por estado" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los estados</SelectItem>
+                <SelectItem value="active">Solo activos</SelectItem>
+                <SelectItem value="inactive">Solo inactivos</SelectItem>
               </SelectContent>
             </Select>
           </div>

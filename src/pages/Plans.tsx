@@ -66,7 +66,7 @@ const Plans = () => {
     mutationFn: async (planData: PlanFormData) => {
       const { data, error } = await supabase
         .from('plans')
-        .insert([planData])
+        .insert(planData)
         .select()
         .single();
       

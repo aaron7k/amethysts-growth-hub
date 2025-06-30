@@ -1,17 +1,48 @@
 
 import { useState } from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { supabase } from "@/integrations/supabase/client"
-import { Search, Users, UserPlus, ExternalLink } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+import { Search, Users, UserPlus, ExternalLink, Edit, Trash2 } from "lucide-react"
 import { Link } from "react-router-dom"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
+
+const clientSchema = z.object({
+  full_name: z.string().min(1, "El nombre es requerido"),
+  email: z.string().email("Email inválido"),
+  phone_number: z.string().optional(),
+  drive_folder_url: z.string().url("URL inválida").optional().or(z.literal(""))
+})
+
+type ClientFormData = z.infer<typeof clientSchema>
 
 export default function Clients() {
   const [searchTerm, setSearchTerm] = useState("")
+  const [editingClient, setEditingClient] = useState<any>(null)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [clientToDelete, setClientToDelete] = useState<any>(null)
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
+
+  const form = useForm<ClientFormData>({
+    resolver: zodResolver(clientSchema),
+    defaultValues: {
+      full_name: "",
+      email: "",
+      phone_number: "",
+      drive_folder_url: ""
+    }
+  })
   
   const { data: clients, isLoading } = useQuery({
     queryKey: ['clients', searchTerm],
@@ -42,6 +73,83 @@ export default function Clients() {
       }))
     }
   })
+
+  const updateClientMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string, data: ClientFormData }) => {
+      const { error } = await supabase
+        .from('clients')
+        .update(data)
+        .eq('id', id)
+
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] })
+      toast({
+        title: "Cliente actualizado",
+        description: "La información del cliente ha sido actualizada exitosamente."
+      })
+      setIsEditDialogOpen(false)
+      setEditingClient(null)
+      form.reset()
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el cliente. Inténtalo de nuevo.",
+        variant: "destructive"
+      })
+    }
+  })
+
+  const deleteClientMutation = useMutation({
+    mutationFn: async (clientId: string) => {
+      const { error } = await supabase
+        .from('clients')
+        .delete()
+        .eq('id', clientId)
+
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] })
+      toast({
+        title: "Cliente eliminado",
+        description: "El cliente ha sido eliminado exitosamente."
+      })
+      setIsDeleteDialogOpen(false)
+      setClientToDelete(null)
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el cliente. Verifica que no tenga suscripciones activas.",
+        variant: "destructive"
+      })
+    }
+  })
+
+  const handleEditClient = (client: any) => {
+    setEditingClient(client)
+    form.reset({
+      full_name: client.full_name,
+      email: client.email,
+      phone_number: client.phone_number || "",
+      drive_folder_url: client.drive_folder_url || ""
+    })
+    setIsEditDialogOpen(true)
+  }
+
+  const handleDeleteClient = (client: any) => {
+    setClientToDelete(client)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const onSubmit = (data: ClientFormData) => {
+    if (editingClient) {
+      updateClientMutation.mutate({ id: editingClient.id, data })
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -163,11 +271,28 @@ export default function Clients() {
                         )}
                       </TableCell>
                       <TableCell>
-                        <Link to={`/clients/${client.id}`}>
-                          <Button variant="outline" size="sm">
-                            Ver Detalle
+                        <div className="flex gap-2">
+                          <Link to={`/clients/${client.id}`}>
+                            <Button variant="outline" size="sm">
+                              Ver Detalle
+                            </Button>
+                          </Link>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleEditClient(client)}
+                          >
+                            <Edit className="h-3 w-3" />
                           </Button>
-                        </Link>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleDeleteClient(client)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -177,6 +302,104 @@ export default function Clients() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Client Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Editar Cliente</DialogTitle>
+            <DialogDescription>
+              Actualiza la información del cliente aquí.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="full_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nombre Completo</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="email" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="phone_number"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Teléfono</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="drive_folder_url"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>URL Carpeta Drive</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button type="submit" disabled={updateClientMutation.isPending}>
+                  {updateClientMutation.isPending ? "Actualizando..." : "Actualizar Cliente"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Client Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Eliminar Cliente</DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que quieres eliminar al cliente "{clientToDelete?.full_name}"? 
+              Esta acción no se puede deshacer y eliminará toda la información del cliente.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={() => deleteClientMutation.mutate(clientToDelete?.id)}
+              disabled={deleteClientMutation.isPending}
+            >
+              {deleteClientMutation.isPending ? "Eliminando..." : "Eliminar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -1,3 +1,4 @@
+
 import { useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -6,18 +7,50 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
-import { CreditCard, Search, Filter, CheckCircle, DollarSign } from "lucide-react"
+import { CreditCard, Search, Filter, CheckCircle, DollarSign, Edit, Trash2 } from "lucide-react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
 
 type InstallmentStatus = 'pending' | 'paid' | 'overdue'
 type PaymentMethod = 'crypto' | 'stripe' | 'bank_transfer' | 'paypal'
 
+const paymentSchema = z.object({
+  amount_usd: z.string().min(1, "El monto es requerido"),
+  due_date: z.string().min(1, "La fecha de vencimiento es requerida"),
+  status: z.enum(['pending', 'paid', 'overdue']),
+  payment_method: z.enum(['crypto', 'stripe', 'bank_transfer', 'paypal']).optional(),
+  payment_date: z.string().optional(),
+  notes: z.string().optional()
+})
+
+type PaymentFormData = z.infer<typeof paymentSchema>
+
 export default function Payments() {
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [searchTerm, setSearchTerm] = useState("")
+  const [editingPayment, setEditingPayment] = useState<any>(null)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [paymentToDelete, setPaymentToDelete] = useState<any>(null)
   const { toast } = useToast()
   const queryClient = useQueryClient()
+
+  const form = useForm<PaymentFormData>({
+    resolver: zodResolver(paymentSchema),
+    defaultValues: {
+      amount_usd: "",
+      due_date: "",
+      status: "pending",
+      payment_method: undefined,
+      payment_date: "",
+      notes: ""
+    }
+  })
 
   const { data: installments, isLoading } = useQuery({
     queryKey: ['installments', statusFilter, searchTerm],
@@ -83,6 +116,95 @@ export default function Payments() {
       })
     }
   })
+
+  const updatePaymentMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string, data: PaymentFormData }) => {
+      const updateData = {
+        amount_usd: parseFloat(data.amount_usd),
+        due_date: data.due_date,
+        status: data.status,
+        payment_method: data.payment_method,
+        payment_date: data.payment_date || null,
+        notes: data.notes,
+        updated_at: new Date().toISOString()
+      }
+
+      const { error } = await supabase
+        .from('installments')
+        .update(updateData)
+        .eq('id', id)
+
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['installments'] })
+      toast({
+        title: "Pago actualizado",
+        description: "La información del pago ha sido actualizada exitosamente."
+      })
+      setIsEditDialogOpen(false)
+      setEditingPayment(null)
+      form.reset()
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el pago. Inténtalo de nuevo.",
+        variant: "destructive"
+      })
+    }
+  })
+
+  const deletePaymentMutation = useMutation({
+    mutationFn: async (paymentId: string) => {
+      const { error } = await supabase
+        .from('installments')
+        .delete()
+        .eq('id', paymentId)
+
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['installments'] })
+      toast({
+        title: "Pago eliminado",
+        description: "El pago ha sido eliminado exitosamente."
+      })
+      setIsDeleteDialogOpen(false)
+      setPaymentToDelete(null)
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el pago. Inténtalo de nuevo.",
+        variant: "destructive"
+      })
+    }
+  })
+
+  const handleEditPayment = (installment: any) => {
+    setEditingPayment(installment)
+    form.reset({
+      amount_usd: installment.amount_usd.toString(),
+      due_date: installment.due_date,
+      status: installment.status,
+      payment_method: installment.payment_method,
+      payment_date: installment.payment_date || "",
+      notes: installment.notes || ""
+    })
+    setIsEditDialogOpen(true)
+  }
+
+  const handleDeletePayment = (installment: any) => {
+    setPaymentToDelete(installment)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const onSubmit = (data: PaymentFormData) => {
+    if (editingPayment) {
+      updatePaymentMutation.mutate({ id: editingPayment.id, data })
+    }
+  }
 
   const getStatusColor = (status: string) => {
     const colors = {
@@ -236,7 +358,7 @@ export default function Payments() {
                     <TableHead className="min-w-[110px] hidden md:table-cell">Vencimiento</TableHead>
                     <TableHead className="min-w-[100px]">Estado</TableHead>
                     <TableHead className="min-w-[120px] hidden lg:table-cell">Método de Pago</TableHead>
-                    <TableHead className="min-w-[140px]">Acciones</TableHead>
+                    <TableHead className="min-w-[180px]">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -287,8 +409,8 @@ export default function Payments() {
                           {installment.payment_method || '-'}
                         </TableCell>
                         <TableCell>
-                          {installment.status === 'pending' || installment.status === 'overdue' ? (
-                            <div className="flex gap-1 sm:gap-2">
+                          <div className="flex gap-1 sm:gap-2">
+                            {installment.status === 'pending' || installment.status === 'overdue' ? (
                               <Button
                                 size="sm"
                                 onClick={() => markAsPaidMutation.mutate({
@@ -302,13 +424,28 @@ export default function Payments() {
                                 <span className="hidden sm:inline">Marcar Pagado</span>
                                 <span className="sm:hidden">Pagado</span>
                               </Button>
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground text-xs sm:text-sm">
-                              <span className="hidden sm:inline">Pagado el </span>
-                              {installment.payment_date ? new Date(installment.payment_date).toLocaleDateString() : '-'}
-                            </span>
-                          )}
+                            ) : (
+                              <span className="text-muted-foreground text-xs sm:text-sm">
+                                <span className="hidden sm:inline">Pagado el </span>
+                                {installment.payment_date ? new Date(installment.payment_date).toLocaleDateString() : '-'}
+                              </span>
+                            )}
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleEditPayment(installment)}
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleDeletePayment(installment)}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
@@ -319,6 +456,148 @@ export default function Payments() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Payment Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Editar Pago</DialogTitle>
+            <DialogDescription>
+              Actualiza la información del pago aquí.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="amount_usd"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Monto (USD)</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="number" step="0.01" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="due_date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Fecha de Vencimiento</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="date" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Estado</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona un estado" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="pending">Pendiente</SelectItem>
+                        <SelectItem value="paid">Pagado</SelectItem>
+                        <SelectItem value="overdue">Atrasado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="payment_method"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Método de Pago</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona un método" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="stripe">Stripe</SelectItem>
+                        <SelectItem value="crypto">Crypto</SelectItem>
+                        <SelectItem value="bank_transfer">Transferencia</SelectItem>
+                        <SelectItem value="paypal">PayPal</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="payment_date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Fecha de Pago</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="date" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Notas</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button type="submit" disabled={updatePaymentMutation.isPending}>
+                  {updatePaymentMutation.isPending ? "Actualizando..." : "Actualizar Pago"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Payment Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Eliminar Pago</DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que quieres eliminar este pago? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={() => deletePaymentMutation.mutate(paymentToDelete?.id)}
+              disabled={deletePaymentMutation.isPending}
+            >
+              {deletePaymentMutation.isPending ? "Eliminando..." : "Eliminar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

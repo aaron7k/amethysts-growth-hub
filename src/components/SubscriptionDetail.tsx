@@ -171,7 +171,7 @@ export const SubscriptionDetail = ({ subscription, onClose }: SubscriptionDetail
           {subscription.call_level_included && (
             <div className="flex items-center gap-2">
               <Phone className="h-4 w-4" />
-              <p className="text-sm">Nivel de llamadas incluido</p>
+              <p className="text-sm">Call Level incluido</p>
             </div>
           )}
 

@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useParams, Link } from "react-router-dom"
 import { useState } from "react"
@@ -13,26 +12,36 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
-import { ArrowLeft, User, Mail, Phone, ExternalLink, Calendar, DollarSign, CreditCard, Edit, Trash2 } from "lucide-react"
+import { ArrowLeft, User, Mail, Phone, ExternalLink, Calendar, DollarSign, CreditCard, Edit, Trash2, RefreshCw } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 
 const subscriptionSchema = z.object({
   status: z.enum(['active', 'inactive', 'pending_payment', 'cancelled']),
-  next_step: z.enum(['pending_onboarding', 'in_service', 'needs_contact', 'overdue_payment', 'cancelled']),
+  next_step: z.enum(['pending_onboarding', 'in_service', 'needs_contact', 'overdue_payment', 'pending_renewal']),
   total_cost_usd: z.string().min(1, "El costo total es requerido"),
   notes: z.string().optional()
 })
 
+const changePlanSchema = z.object({
+  plan_id: z.string().min(1, "El plan es requerido"),
+  total_cost_usd: z.string().min(1, "El costo total es requerido"),
+  start_date: z.string().min(1, "La fecha de inicio es requerida"),
+  notes: z.string().optional()
+})
+
 type SubscriptionFormData = z.infer<typeof subscriptionSchema>
+type ChangePlanFormData = z.infer<typeof changePlanSchema>
 
 export default function ClientDetail() {
   const { id } = useParams<{ id: string }>()
   const [editingSubscription, setEditingSubscription] = useState<any>(null)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isChangePlanDialogOpen, setIsChangePlanDialogOpen] = useState(false)
   const [subscriptionToDelete, setSubscriptionToDelete] = useState<any>(null)
+  const [subscriptionToChangePlan, setSubscriptionToChangePlan] = useState<any>(null)
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
@@ -42,6 +51,16 @@ export default function ClientDetail() {
       status: 'active',
       next_step: 'in_service',
       total_cost_usd: "",
+      notes: ""
+    }
+  })
+
+  const changePlanForm = useForm<ChangePlanFormData>({
+    resolver: zodResolver(changePlanSchema),
+    defaultValues: {
+      plan_id: "",
+      total_cost_usd: "",
+      start_date: "",
       notes: ""
     }
   })
@@ -68,6 +87,20 @@ export default function ClientDetail() {
       return data
     },
     enabled: !!id
+  })
+
+  const { data: plans } = useQuery({
+    queryKey: ['plans'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('plans')
+        .select('*')
+        .eq('is_active', true)
+        .order('name')
+
+      if (error) throw error
+      return data
+    }
   })
 
   const updateSubscriptionMutation = useMutation({
@@ -131,6 +164,48 @@ export default function ClientDetail() {
     }
   })
 
+  const changePlanMutation = useMutation({
+    mutationFn: async ({ subscriptionId, data }: { subscriptionId: string, data: ChangePlanFormData }) => {
+      const selectedPlan = plans?.find(p => p.id === data.plan_id)
+      if (!selectedPlan) throw new Error("Plan no encontrado")
+
+      const startDate = new Date(data.start_date)
+      const endDate = new Date(startDate)
+      endDate.setDate(endDate.getDate() + selectedPlan.duration_days)
+
+      const { error } = await supabase
+        .from('subscriptions')
+        .update({
+          plan_id: data.plan_id,
+          total_cost_usd: parseFloat(data.total_cost_usd),
+          start_date: data.start_date,
+          end_date: endDate.toISOString().split('T')[0],
+          notes: data.notes,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', subscriptionId)
+
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['client', id] })
+      toast({
+        title: "Plan cambiado",
+        description: "El plan de la suscripción ha sido cambiado exitosamente."
+      })
+      setIsChangePlanDialogOpen(false)
+      setSubscriptionToChangePlan(null)
+      changePlanForm.reset()
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo cambiar el plan. Inténtalo de nuevo.",
+        variant: "destructive"
+      })
+    }
+  })
+
   const handleEditSubscription = (subscription: any) => {
     setEditingSubscription(subscription)
     form.reset({
@@ -147,9 +222,26 @@ export default function ClientDetail() {
     setIsDeleteDialogOpen(true)
   }
 
+  const handleChangePlan = (subscription: any) => {
+    setSubscriptionToChangePlan(subscription)
+    changePlanForm.reset({
+      plan_id: subscription.plan_id,
+      total_cost_usd: subscription.total_cost_usd.toString(),
+      start_date: subscription.start_date,
+      notes: subscription.notes || ""
+    })
+    setIsChangePlanDialogOpen(true)
+  }
+
   const onSubmit = (data: SubscriptionFormData) => {
     if (editingSubscription) {
       updateSubscriptionMutation.mutate({ id: editingSubscription.id, data })
+    }
+  }
+
+  const onChangePlanSubmit = (data: ChangePlanFormData) => {
+    if (subscriptionToChangePlan) {
+      changePlanMutation.mutate({ subscriptionId: subscriptionToChangePlan.id, data })
     }
   }
 
@@ -307,7 +399,16 @@ export default function ClientDetail() {
                         <Button 
                           variant="outline" 
                           size="sm"
+                          onClick={() => handleChangePlan(subscription)}
+                          title="Cambiar Plan"
+                        >
+                          <RefreshCw className="h-3 w-3" />
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
                           onClick={() => handleEditSubscription(subscription)}
+                          title="Editar"
                         >
                           <Edit className="h-3 w-3" />
                         </Button>
@@ -316,6 +417,7 @@ export default function ClientDetail() {
                           size="sm"
                           onClick={() => handleDeleteSubscription(subscription)}
                           className="text-red-600 hover:text-red-700"
+                          title="Eliminar"
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>
@@ -477,7 +579,7 @@ export default function ClientDetail() {
                         <SelectItem value="in_service">En Servicio</SelectItem>
                         <SelectItem value="needs_contact">Necesita Contacto</SelectItem>
                         <SelectItem value="overdue_payment">Pago Atrasado</SelectItem>
-                        <SelectItem value="cancelled">Cancelado</SelectItem>
+                        <SelectItem value="pending_renewal">Renovación Pendiente</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -513,6 +615,90 @@ export default function ClientDetail() {
               <DialogFooter>
                 <Button type="submit" disabled={updateSubscriptionMutation.isPending}>
                   {updateSubscriptionMutation.isPending ? "Actualizando..." : "Actualizar Suscripción"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change Plan Dialog */}
+      <Dialog open={isChangePlanDialogOpen} onOpenChange={setIsChangePlanDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Cambiar Plan</DialogTitle>
+            <DialogDescription>
+              Cambia el plan de la suscripción seleccionada.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...changePlanForm}>
+            <form onSubmit={changePlanForm.handleSubmit(onChangePlanSubmit)} className="space-y-4">
+              <FormField
+                control={changePlanForm.control}
+                name="plan_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nuevo Plan</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona el plan" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {plans?.map((plan) => (
+                          <SelectItem key={plan.id} value={plan.id}>
+                            {plan.name} - ${plan.price_usd}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={changePlanForm.control}
+                name="total_cost_usd"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Costo Total (USD)</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="number" step="0.01" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={changePlanForm.control}
+                name="start_date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nueva Fecha de Inicio</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="date" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={changePlanForm.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Notas</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button type="submit" disabled={changePlanMutation.isPending}>
+                  {changePlanMutation.isPending ? "Cambiando..." : "Cambiar Plan"}
                 </Button>
               </DialogFooter>
             </form>

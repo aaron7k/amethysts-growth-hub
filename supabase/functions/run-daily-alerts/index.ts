@@ -19,6 +19,9 @@ serve(async (req) => {
     )
 
     console.log('Running daily alerts cron job...')
+    
+    // Marcar el tiempo de inicio para identificar alertas nuevas
+    const executionStartTime = new Date().toISOString()
 
     // Ejecutar función para pagos retrasados
     const { error: overdueError } = await supabaseClient.rpc('create_payment_overdue_alerts')
@@ -52,20 +55,21 @@ serve(async (req) => {
       console.log('Accelerator stage changes checked successfully')
     }
 
-    // Obtener todas las alertas pendientes y enviarlas automáticamente
-    const { data: pendingAlerts, error: fetchError } = await supabaseClient
+    // Obtener SOLO las alertas que se crearon en esta ejecución
+    const { data: newAlerts, error: fetchError } = await supabaseClient
       .from('alerts')
       .select('id, alert_type')
       .eq('status', 'pending')
+      .gte('created_at', executionStartTime)
       .order('created_at', { ascending: true })
 
     if (fetchError) {
-      console.error('Error fetching pending alerts:', fetchError)
-    } else if (pendingAlerts && pendingAlerts.length > 0) {
-      console.log(`Found ${pendingAlerts.length} pending alerts to send`)
+      console.error('Error fetching new alerts:', fetchError)
+    } else if (newAlerts && newAlerts.length > 0) {
+      console.log(`Found ${newAlerts.length} new alerts created in this execution to send`)
       
-      // Enviar cada alerta pendiente
-      for (const alert of pendingAlerts) {
+      // Enviar cada alerta nueva
+      for (const alert of newAlerts) {
         try {
           // Determinar qué función usar según el tipo de alerta
           const functionName = (alert.alert_type === 'stage_change' || alert.alert_type === 'stage_overdue') 
@@ -86,14 +90,14 @@ serve(async (req) => {
         }
       }
     } else {
-      console.log('No pending alerts to send')
+      console.log('No new alerts were created in this execution')
     }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         message: 'Daily alerts cron job completed successfully',
-        alertsProcessed: pendingAlerts?.length || 0
+        newAlertsProcessed: newAlerts?.length || 0
       }),
       { 
         status: 200, 

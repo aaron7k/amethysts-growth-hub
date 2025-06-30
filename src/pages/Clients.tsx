@@ -15,6 +15,7 @@ import { Link } from "react-router-dom"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 const clientSchema = z.object({
   full_name: z.string().min(1, "El nombre es requerido"),
@@ -38,6 +39,7 @@ export default function Clients() {
   const [clientToDelete, setClientToDelete] = useState<any>(null)
   const { toast } = useToast()
   const queryClient = useQueryClient()
+  const isMobile = useIsMobile()
 
   const form = useForm<ClientFormData>({
     resolver: zodResolver(clientSchema),
@@ -191,19 +193,19 @@ export default function Clients() {
   }
 
   return (
-    <div className="space-y-6 p-4 sm:p-6">
+    <div className="space-y-4 p-4 max-w-full overflow-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-3">
-            <Users className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
-            Gestión de Clientes
+        <div className="min-w-0 flex-1">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
+            <Users className="h-6 w-6 text-primary flex-shrink-0" />
+            <span className="truncate">Gestión de Clientes</span>
           </h1>
-          <p className="text-muted-foreground mt-2 text-sm sm:text-base">
+          <p className="text-muted-foreground mt-1 text-sm">
             Administra la información y historial de todos tus clientes
           </p>
         </div>
-        <Link to="/new-sale">
+        <Link to="/new-sale" className="flex-shrink-0">
           <Button className="amethyst-gradient hover:opacity-90 transition-opacity w-full sm:w-auto">
             <UserPlus className="h-4 w-4 mr-2" />
             Nuevo Cliente
@@ -213,23 +215,23 @@ export default function Clients() {
 
       {/* Search and Filters */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base sm:text-lg">Buscar y Filtrar Clientes</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Buscar y Filtrar</CardTitle>
           <CardDescription className="text-sm">
             Encuentra clientes por nombre, email, tipo o estado
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Buscar por nombre o email..." 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
+        <CardContent className="space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input 
+              placeholder="Buscar por nombre o email..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Select value={clientTypeFilter} onValueChange={setClientTypeFilter}>
               <SelectTrigger>
                 <SelectValue placeholder="Filtrar por tipo" />
@@ -257,13 +259,13 @@ export default function Clients() {
 
       {/* Clients Table */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base sm:text-lg">Lista de Clientes</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Lista de Clientes</CardTitle>
           <CardDescription className="text-sm">
             {clients?.length || 0} clientes encontrados
           </CardDescription>
         </CardHeader>
-        <CardContent className="p-0 sm:p-6">
+        <CardContent className="p-0">
           {isLoading ? (
             <div className="flex justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -273,67 +275,52 @@ export default function Clients() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="min-w-[200px]">Cliente</TableHead>
-                    <TableHead className="min-w-[200px] hidden sm:table-cell">Email</TableHead>
-                    <TableHead className="min-w-[120px] hidden md:table-cell">Teléfono</TableHead>
-                    <TableHead className="min-w-[120px]">Tipo</TableHead>
-                    <TableHead className="min-w-[100px] hidden lg:table-cell">Suscripciones</TableHead>
-                    <TableHead className="min-w-[80px]">Estado</TableHead>
-                    <TableHead className="min-w-[100px] hidden xl:table-cell">Carpeta Drive</TableHead>
-                    <TableHead className="min-w-[120px] hidden lg:table-cell">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={handleSortToggle}
-                        className="flex items-center gap-1 hover:bg-transparent p-0"
-                      >
-                        Última Actualización
-                        {sortOrder === 'asc' ? (
-                          <ArrowUp className="h-3 w-3" />
-                        ) : (
-                          <ArrowDown className="h-3 w-3" />
-                        )}
-                      </Button>
-                    </TableHead>
-                    <TableHead className="min-w-[200px]">Acciones</TableHead>
+                    <TableHead className="w-[200px] min-w-[200px]">Cliente</TableHead>
+                    {!isMobile && (
+                      <TableHead className="w-[120px] min-w-[120px]">Tipo</TableHead>
+                    )}
+                    <TableHead className="w-[100px] min-w-[100px]">Estado</TableHead>
+                    {!isMobile && (
+                      <TableHead className="w-[80px] min-w-[80px]">Subs.</TableHead>
+                    )}
+                    <TableHead className="w-[200px] min-w-[200px]">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {clients?.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={isMobile ? 3 : 5} className="text-center py-8 text-muted-foreground">
                         No se encontraron clientes
                       </TableCell>
                     </TableRow>
                   ) : (
                     clients?.map((client) => (
                       <TableRow key={client.id} className="hover:bg-muted/50">
-                        <TableCell>
-                          <div className="font-medium text-sm sm:text-base">{client.full_name}</div>
-                          <div className="text-xs text-muted-foreground sm:hidden">
-                            {client.email}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            Cliente desde {new Date(client.created_at || '').toLocaleDateString()}
-                          </div>
-                        </TableCell>
-                        <TableCell className="hidden sm:table-cell text-sm">{client.email}</TableCell>
-                        <TableCell className="hidden md:table-cell text-sm">{client.phone_number || '-'}</TableCell>
-                        <TableCell>
-                          <Badge className={`text-xs ${getClientTypeBadgeColor(client.client_type || 'client')}`}>
-                            {getClientTypeLabel(client.client_type || 'client')}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="hidden lg:table-cell">
-                          <div className="flex flex-col gap-1">
-                            <span className="text-xs font-medium">
-                              {client.activeSubscriptions} activas
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {client.totalSubscriptions} total
-                            </span>
+                        <TableCell className="max-w-0">
+                          <div className="space-y-1">
+                            <div className="font-medium text-sm truncate pr-2">
+                              {client.full_name}
+                            </div>
+                            <div className="text-xs text-muted-foreground truncate pr-2">
+                              {client.email}
+                            </div>
+                            {isMobile && (
+                              <Badge className={`text-xs ${getClientTypeBadgeColor(client.client_type || 'client')}`}>
+                                {getClientTypeLabel(client.client_type || 'client')}
+                              </Badge>
+                            )}
+                            <div className="text-xs text-muted-foreground">
+                              Cliente desde {new Date(client.created_at || '').toLocaleDateString()}
+                            </div>
                           </div>
                         </TableCell>
+                        {!isMobile && (
+                          <TableCell>
+                            <Badge className={`text-xs ${getClientTypeBadgeColor(client.client_type || 'client')}`}>
+                              {getClientTypeLabel(client.client_type || 'client')}
+                            </Badge>
+                          </TableCell>
+                        )}
                         <TableCell>
                           <Badge 
                             variant={client.status ? "default" : "secondary"}
@@ -341,52 +328,49 @@ export default function Clients() {
                           >
                             {client.status ? 'Activo' : 'Inactivo'}
                           </Badge>
-                        </TableCell>
-                        <TableCell className="hidden xl:table-cell">
-                          {client.drive_folder_url ? (
-                            <a 
-                              href={client.drive_folder_url} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-primary hover:underline text-xs"
-                            >
-                              <ExternalLink className="h-3 w-3" />
-                              Ver carpeta
-                            </a>
-                          ) : (
-                            <span className="text-muted-foreground text-xs">-</span>
+                          {isMobile && (
+                            <div className="text-xs text-muted-foreground mt-1">
+                              {client.activeSubscriptions} / {client.totalSubscriptions} subs
+                            </div>
                           )}
                         </TableCell>
-                        <TableCell className="hidden lg:table-cell">
-                          <div className="text-xs">
-                            {client.updated_at ? new Date(client.updated_at).toLocaleDateString() : '-'}
-                          </div>
-                        </TableCell>
+                        {!isMobile && (
+                          <TableCell>
+                            <div className="text-xs">
+                              <div className="font-medium">
+                                {client.activeSubscriptions} activas
+                              </div>
+                              <div className="text-muted-foreground">
+                                {client.totalSubscriptions} total
+                              </div>
+                            </div>
+                          </TableCell>
+                        )}
                         <TableCell>
-                          <div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
-                            <Link to={`/clients/${client.id}`}>
-                              <Button variant="outline" size="sm" className="w-full sm:w-auto text-xs">
+                          <div className="flex flex-col gap-1">
+                            <Link to={`/clients/${client.id}`} className="w-full">
+                              <Button variant="outline" size="sm" className="w-full text-xs">
                                 Ver Detalle
                               </Button>
                             </Link>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleEditClient(client)}
-                              className="w-full sm:w-auto"
-                            >
-                              <Edit className="h-3 w-3" />
-                              <span className="ml-1 sm:hidden">Editar</span>
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleDeleteClient(client)}
-                              className="text-red-600 hover:text-red-700 w-full sm:w-auto"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                              <span className="ml-1 sm:hidden">Eliminar</span>
-                            </Button>
+                            <div className="flex gap-1">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleEditClient(client)}
+                                className="flex-1"
+                              >
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleDeleteClient(client)}
+                                className="text-red-600 hover:text-red-700 flex-1"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -401,7 +385,7 @@ export default function Clients() {
 
       {/* Edit Client Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[425px] mx-4">
+        <DialogContent className="sm:max-w-[425px] mx-4 max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Cliente</DialogTitle>
             <DialogDescription>
@@ -509,7 +493,7 @@ export default function Clients() {
                 )}
               />
               <DialogFooter>
-                <Button type="submit" disabled={updateClientMutation.isPending} className="w-full sm:w-auto">
+                <Button type="submit" disabled={updateClientMutation.isPending} className="w-full">
                   {updateClientMutation.isPending ? "Actualizando..." : "Actualizar Cliente"}
                 </Button>
               </DialogFooter>

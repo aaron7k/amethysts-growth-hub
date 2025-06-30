@@ -40,7 +40,7 @@ const App = () => (
                   <SidebarProvider>
                     <div className="min-h-screen flex w-full bg-background">
                       <AppSidebar />
-                      <div className="flex-1 flex flex-col ml-[var(--sidebar-width,256px)] transition-all duration-300">
+                      <div className="flex-1 flex flex-col">
                         <TopNavigation />
                         <main className="flex-1 p-6 pt-6">
                           <Routes>

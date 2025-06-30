@@ -26,12 +26,6 @@ export function AppSidebar() {
     return currentPath.startsWith(path)
   }
 
-  // Update CSS custom property when collapsed state changes
-  useEffect(() => {
-    const sidebarWidth = collapsed ? '64px' : '256px'
-    document.documentElement.style.setProperty('--sidebar-width', sidebarWidth)
-  }, [collapsed])
-
   return (
     <div className={`fixed left-0 top-0 h-screen bg-card border-r border-border transition-all duration-300 flex flex-col z-40 ${
       collapsed ? 'w-16' : 'w-64'

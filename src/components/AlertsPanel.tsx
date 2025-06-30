@@ -59,24 +59,25 @@ export function AlertsPanel({ open, onOpenChange }: AlertsPanelProps) {
 
   const markAsSentMutation = useMutation({
     mutationFn: async (alertId: string) => {
-      console.log('Marking alert as sent:', alertId)
-      const { error } = await supabase
-        .from('alerts')
-        .update({ status: 'sent', sent_at: new Date().toISOString() })
-        .eq('id', alertId)
+      console.log('Marking alert as sent and sending to webhook:', alertId)
+      
+      // Usar la función edge send-alert para procesar la alerta
+      const { error } = await supabase.functions.invoke('send-alert', {
+        body: { alertId }
+      })
 
       if (error) {
-        console.error('Error updating alert:', error)
+        console.error('Error sending alert:', error)
         throw error
       }
-      console.log('Alert marked as sent successfully')
+      console.log('Alert sent and marked as sent successfully')
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['alerts'] })
       queryClient.invalidateQueries({ queryKey: ['pending-alerts-count'] })
       toast({
         title: "Alerta procesada",
-        description: "La alerta ha sido marcada como procesada."
+        description: "La alerta ha sido marcada como procesada y enviada."
       })
     },
     onError: (error) => {
@@ -92,15 +93,34 @@ export function AlertsPanel({ open, onOpenChange }: AlertsPanelProps) {
   const markAllAsSentMutation = useMutation({
     mutationFn: async () => {
       console.log('Marking all pending alerts as sent')
-      const { error } = await supabase
+      
+      // Obtener todas las alertas pendientes
+      const { data: pendingAlerts, error: fetchError } = await supabase
         .from('alerts')
-        .update({ status: 'sent', sent_at: new Date().toISOString() })
+        .select('id')
         .eq('status', 'pending')
 
-      if (error) {
-        console.error('Error updating all alerts:', error)
-        throw error
+      if (fetchError) {
+        console.error('Error fetching pending alerts:', fetchError)
+        throw fetchError
       }
+
+      // Enviar cada alerta usando la función edge
+      const sendPromises = pendingAlerts.map(alert => 
+        supabase.functions.invoke('send-alert', {
+          body: { alertId: alert.id }
+        })
+      )
+
+      const results = await Promise.allSettled(sendPromises)
+      
+      // Verificar si hubo errores
+      const failures = results.filter(result => result.status === 'rejected')
+      if (failures.length > 0) {
+        console.error('Some alerts failed to send:', failures)
+        throw new Error(`${failures.length} alertas no se pudieron procesar`)
+      }
+
       console.log('All alerts marked as sent successfully')
     },
     onSuccess: () => {
@@ -108,7 +128,7 @@ export function AlertsPanel({ open, onOpenChange }: AlertsPanelProps) {
       queryClient.invalidateQueries({ queryKey: ['pending-alerts-count'] })
       toast({
         title: "Todas las alertas procesadas",
-        description: "Todas las alertas pendientes han sido marcadas como procesadas."
+        description: "Todas las alertas pendientes han sido marcadas como procesadas y enviadas."
       })
     },
     onError: (error) => {

@@ -145,6 +145,7 @@ export type Database = {
           created_at: string
           end_date: string
           id: string
+          is_activated: boolean
           notes: string | null
           stage_name: string
           stage_number: number
@@ -158,6 +159,7 @@ export type Database = {
           created_at?: string
           end_date: string
           id?: string
+          is_activated?: boolean
           notes?: string | null
           stage_name: string
           stage_number: number
@@ -171,6 +173,7 @@ export type Database = {
           created_at?: string
           end_date?: string
           id?: string
+          is_activated?: boolean
           notes?: string | null
           stage_name?: string
           stage_number?: number

@@ -4,12 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { Calendar, Clock, CheckCircle, AlertTriangle, Target, Users, Settings } from "lucide-react"
+import { Calendar, Clock, CheckCircle, AlertTriangle, Target, Users, Settings, Play } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useState } from "react"
 import StageChecklist from "@/components/StageChecklist"
 import ChecklistTemplateManager from "@/components/ChecklistTemplateManager"
@@ -47,6 +48,7 @@ interface AcceleratorStage {
   status: string
   completed_at: string | null
   notes: string | null
+  is_activated: boolean
 }
 
 const Accelerator = () => {
@@ -55,6 +57,8 @@ const Accelerator = () => {
   const [selectedSubscription, setSelectedSubscription] = useState<string>("")
   const [startDate, setStartDate] = useState<string>("")
   const [showTemplateManager, setShowTemplateManager] = useState(false)
+  const [activateStagesOpen, setActivateStagesOpen] = useState(false)
+  const [selectedProgramForActivation, setSelectedProgramForActivation] = useState<AcceleratorProgram | null>(null)
   const queryClient = useQueryClient()
 
   // Obtener programas de aceleradora
@@ -165,6 +169,27 @@ const Accelerator = () => {
     enabled: !!selectedProgram
   })
 
+  // Obtener etapas para el modal de activación
+  const { data: activationStages } = useQuery({
+    queryKey: ['activation-stages', selectedProgramForActivation?.subscription_id],
+    queryFn: async () => {
+      if (!selectedProgramForActivation) return []
+      
+      const { data, error } = await supabase
+        .from('accelerator_stages')
+        .select('*')
+        .eq('subscription_id', selectedProgramForActivation.subscription_id)
+        .order('stage_number')
+      
+      if (error) {
+        console.error('Error fetching activation stages:', error)
+        throw error
+      }
+      return data as AcceleratorStage[]
+    },
+    enabled: !!selectedProgramForActivation
+  })
+
   // Crear nuevo programa
   const createProgramMutation = useMutation({
     mutationFn: async ({ subscriptionId, startDate }: { subscriptionId: string, startDate: string }) => {
@@ -259,6 +284,50 @@ const Accelerator = () => {
         variant: "destructive"
       })
     }
+  }
+
+  // Activar/Desactivar etapa
+  const toggleStageActivation = async (stageId: string, stageNumber: number, activate: boolean, clientId: string) => {
+    try {
+      // Actualizar en base de datos
+      const { error } = await supabase
+        .from('accelerator_stages')
+        .update({ is_activated: activate })
+        .eq('id', stageId)
+      
+      if (error) throw error
+
+      // Enviar webhook
+      await fetch('https://hooks.infragrowthai.com/webhook/activate-phase', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phase: stageNumber,
+          user_id: clientId,
+          activate: activate
+        })
+      })
+      
+      queryClient.invalidateQueries({ queryKey: ['accelerator-stages'] })
+      toast({
+        title: activate ? "Etapa activada" : "Etapa desactivada",
+        description: `La etapa ${stageNumber} se ha ${activate ? 'activado' : 'desactivado'} correctamente`
+      })
+    } catch (error) {
+      console.error('Error toggling stage activation:', error)
+      toast({
+        title: "Error",
+        description: "No se pudo cambiar el estado de la etapa",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const openActivateStagesModal = (program: AcceleratorProgram) => {
+    setSelectedProgramForActivation(program)
+    setActivateStagesOpen(true)
   }
 
   const getStatusColor = (status: string) => {
@@ -478,6 +547,15 @@ const Accelerator = () => {
                   <Button
                     variant="outline"
                     size="sm"
+                    onClick={() => openActivateStagesModal(program)}
+                  >
+                    <Play className="mr-1 h-3 w-3" />
+                    Activar Etapas
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => setSelectedProgram(
                       selectedProgram === program.subscription_id ? null : program.subscription_id
                     )}
@@ -573,6 +651,57 @@ const Accelerator = () => {
           </Card>
         ))}
       </div>
+
+      {/* Modal para activar etapas */}
+      <Dialog open={activateStagesOpen} onOpenChange={setActivateStagesOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              Activar Etapas - {selectedProgramForActivation?.subscriptions.clients.full_name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 p-4">
+            <TooltipProvider>
+              {activationStages?.map((stage) => (
+                <Tooltip key={stage.id}>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={stage.is_activated ? "default" : "outline"}
+                      className={`h-20 flex flex-col items-center justify-center space-y-2 ${
+                        stage.is_activated ? 'opacity-75' : ''
+                      }`}
+                      onClick={() => 
+                        toggleStageActivation(
+                          stage.id, 
+                          stage.stage_number, 
+                          !stage.is_activated,
+                          selectedProgramForActivation?.subscriptions.client_id || ''
+                        )
+                      }
+                    >
+                      <span className="font-bold text-lg">Etapa {stage.stage_number}</span>
+                      <span className="text-sm text-center">{stage.stage_name}</span>
+                      {stage.is_activated && (
+                        <Badge variant="secondary" className="mt-1">
+                          Activada
+                        </Badge>
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>
+                      {stage.is_activated 
+                        ? `Desactivar la ${stage.stage_name}` 
+                        : `Activar la ${stage.stage_name}`
+                      }
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              ))}
+            </TooltipProvider>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

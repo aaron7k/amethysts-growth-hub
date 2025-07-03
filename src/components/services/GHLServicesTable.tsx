@@ -32,7 +32,7 @@ export const GHLServicesTable = ({ services }: GHLServicesTableProps) => {
           return (
             <TableRow key={service.id}>
               <TableCell className="font-medium">
-                {service.subscription?.client?.full_name || 'N/A'}
+                {service.subscription?.client?.full_name || service.client?.full_name || 'N/A'}
               </TableCell>
               <TableCell>{details?.name || 'N/A'}</TableCell>
               <TableCell>{details?.email || 'N/A'}</TableCell>

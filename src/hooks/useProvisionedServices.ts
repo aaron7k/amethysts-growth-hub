@@ -12,7 +12,8 @@ export const useProvisionedServices = () => {
           *,
           subscription:subscriptions(
             client:clients(full_name)
-          )
+          ),
+          client:clients(full_name)
         `)
         .in('service_type', ['gohighlevel_account', 'infraestructure_server']);
       

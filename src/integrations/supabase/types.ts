@@ -387,32 +387,42 @@ export type Database = {
       provisioned_services: {
         Row: {
           access_details: Json | null
+          client_id: string | null
           created_at: string | null
           id: string
           is_active: boolean | null
           provisioned_at: string | null
           service_type: string
-          subscription_id: string
+          subscription_id: string | null
         }
         Insert: {
           access_details?: Json | null
+          client_id?: string | null
           created_at?: string | null
           id?: string
           is_active?: boolean | null
           provisioned_at?: string | null
           service_type: string
-          subscription_id: string
+          subscription_id?: string | null
         }
         Update: {
           access_details?: Json | null
+          client_id?: string | null
           created_at?: string | null
           id?: string
           is_active?: boolean | null
           provisioned_at?: string | null
           service_type?: string
-          subscription_id?: string
+          subscription_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "provisioned_services_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "provisioned_services_subscription_id_fkey"
             columns: ["subscription_id"]

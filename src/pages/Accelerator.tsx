@@ -311,6 +311,7 @@ const Accelerator = () => {
       })
       
       queryClient.invalidateQueries({ queryKey: ['accelerator-stages'] })
+      queryClient.invalidateQueries({ queryKey: ['activation-stages', selectedProgramForActivation?.subscription_id] })
       toast({
         title: activate ? "Etapa activada" : "Etapa desactivada",
         description: `La etapa ${stageNumber} se ha ${activate ? 'activado' : 'desactivado'} correctamente`
@@ -665,28 +666,28 @@ const Accelerator = () => {
               {activationStages?.map((stage) => (
                 <Tooltip key={stage.id}>
                   <TooltipTrigger asChild>
-                    <Button
-                      variant={stage.is_activated ? "default" : "outline"}
-                      className={`h-20 flex flex-col items-center justify-center space-y-2 ${
-                        stage.is_activated ? 'opacity-75' : ''
-                      }`}
-                      onClick={() => 
-                        toggleStageActivation(
-                          stage.id, 
-                          stage.stage_number, 
-                          !stage.is_activated,
-                          selectedProgramForActivation?.subscriptions.client_id || ''
-                        )
-                      }
-                    >
-                      <span className="font-bold text-lg">Etapa {stage.stage_number}</span>
-                      <span className="text-sm text-center">{stage.stage_name}</span>
-                      {stage.is_activated && (
-                        <Badge variant="secondary" className="mt-1">
-                          Activada
-                        </Badge>
-                      )}
-                    </Button>
+                     <Button
+                       variant={stage.is_activated ? "default" : "outline"}
+                       className={`h-24 flex flex-col items-center justify-center p-2 ${
+                         stage.is_activated ? 'opacity-75' : ''
+                       }`}
+                       onClick={() => 
+                         toggleStageActivation(
+                           stage.id, 
+                           stage.stage_number, 
+                           !stage.is_activated,
+                           selectedProgramForActivation?.subscriptions.client_id || ''
+                         )
+                       }
+                     >
+                       <span className="font-bold text-base">Etapa {stage.stage_number}</span>
+                       <span className="text-xs text-center leading-tight">{stage.stage_name}</span>
+                       {stage.is_activated && (
+                         <Badge variant="secondary" className="mt-1 text-xs">
+                           Activada
+                         </Badge>
+                       )}
+                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>

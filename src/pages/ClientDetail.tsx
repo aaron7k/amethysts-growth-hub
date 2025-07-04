@@ -377,7 +377,7 @@ export default function ClientDetail() {
             {client.subscriptions?.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <p>No hay suscripciones registradas para este cliente</p>
-                <Link to="/new-sale" className="mt-4 inline-block">
+                <Link to={`/new-sale?client_id=${client.id}`} className="mt-4 inline-block">
                   <Button>Crear Primera Venta</Button>
                 </Link>
               </div>

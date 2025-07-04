@@ -1,7 +1,7 @@
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,6 +14,9 @@ import { useToast } from "@/hooks/use-toast"
 import { UserPlus, ArrowRight, DollarSign, Calendar } from "lucide-react"
 
 export default function NewSale() {
+  const [searchParams] = useSearchParams()
+  const preselectedClientId = searchParams.get('client_id')
+  
   const [step, setStep] = useState(1)
   const [clientData, setClientData] = useState({
     full_name: '',
@@ -21,7 +24,7 @@ export default function NewSale() {
     phone_number: '',
     drive_folder_url: ''
   })
-  const [selectedClientId, setSelectedClientId] = useState('')
+  const [selectedClientId, setSelectedClientId] = useState(preselectedClientId || '')
   const [selectedPlanId, setSelectedPlanId] = useState('')
   const [installmentCount, setInstallmentCount] = useState(1)
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0])
@@ -45,6 +48,13 @@ export default function NewSale() {
       return data
     }
   })
+
+  // Auto-advance to step 2 if client is preselected
+  useEffect(() => {
+    if (preselectedClientId && existingClients?.some(client => client.id === preselectedClientId)) {
+      setStep(2)
+    }
+  }, [preselectedClientId, existingClients])
 
   const { data: plans } = useQuery({
     queryKey: ['plans'],

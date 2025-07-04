@@ -279,6 +279,9 @@ export default function Clients() {
                     {!isMobile && (
                       <TableHead className="w-[120px] min-w-[120px]">Tipo</TableHead>
                     )}
+                    {!isMobile && (
+                      <TableHead className="w-[120px] min-w-[120px]">WhatsApp</TableHead>
+                    )}
                     <TableHead className="w-[100px] min-w-[100px]">Estado</TableHead>
                     {!isMobile && (
                       <TableHead className="w-[80px] min-w-[80px]">Subs.</TableHead>
@@ -289,7 +292,7 @@ export default function Clients() {
                 <TableBody>
                   {clients?.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={isMobile ? 3 : 5} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={isMobile ? 3 : 6} className="text-center py-8 text-muted-foreground">
                         No se encontraron clientes
                       </TableCell>
                     </TableRow>
@@ -319,6 +322,13 @@ export default function Clients() {
                             <Badge className={`text-xs ${getClientTypeBadgeColor(client.client_type || 'client')}`}>
                               {getClientTypeLabel(client.client_type || 'client')}
                             </Badge>
+                          </TableCell>
+                        )}
+                        {!isMobile && (
+                          <TableCell>
+                            <div className="text-sm">
+                              {client.phone_number || 'N/A'}
+                            </div>
                           </TableCell>
                         )}
                         <TableCell>

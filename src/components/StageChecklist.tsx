@@ -204,7 +204,7 @@ const StageChecklist = ({ subscriptionId, stageNumber, stageName, isCurrentStage
   }
 
   return (
-    <Card className={`${isCurrentStage ? 'border-blue-500 bg-blue-50' : ''}`}>
+    <Card className={`${isCurrentStage ? 'border-primary bg-primary/5' : ''}`}>
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
@@ -216,7 +216,7 @@ const StageChecklist = ({ subscriptionId, stageNumber, stageName, isCurrentStage
               {completedCount}/{totalCount} ({progressPercentage}%)
             </Badge>
             {isCurrentStage && (
-              <Badge className="bg-blue-500">Etapa Actual</Badge>
+              <Badge className="bg-primary text-primary-foreground">Etapa Actual</Badge>
             )}
           </div>  
         </div>
@@ -246,8 +246,8 @@ const StageChecklist = ({ subscriptionId, stageNumber, stageName, isCurrentStage
               
               return (
                 <div key={item.template_id} className={`flex items-start gap-3 p-3 border rounded-lg ${
-                  isPending ? 'bg-yellow-50 border-yellow-200' : ''
-                } ${isBeingEdited ? 'bg-blue-50 border-blue-200' : ''}`}>
+                  isPending ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800' : ''
+                } ${isBeingEdited ? 'bg-primary/5 border-primary/20' : ''}`}>
                   <Checkbox
                     checked={item.is_completed}
                     onCheckedChange={(checked) => handleItemToggle(item, checked)}
@@ -260,10 +260,10 @@ const StageChecklist = ({ subscriptionId, stageNumber, stageName, isCurrentStage
                       <h4 className={`font-medium ${item.is_completed ? 'line-through text-muted-foreground' : ''}`}>
                         {item.item_name}
                         {isPending && !isBeingEdited && (
-                          <span className="ml-2 text-xs text-yellow-600">(Guardando...)</span>
+                          <span className="ml-2 text-xs text-amber-600 dark:text-amber-400">(Guardando...)</span>
                         )}
                         {isBeingEdited && (
-                          <span className="ml-2 text-xs text-blue-600">(Agregando notas...)</span>
+                          <span className="ml-2 text-xs text-primary">(Agregando notas...)</span>
                         )}
                       </h4>
                       {item.is_required && (
@@ -300,10 +300,10 @@ const StageChecklist = ({ subscriptionId, stageNumber, stageName, isCurrentStage
 
         {/* Modal para agregar notas al completar */}
         {selectedItem && (
-          <div className="mt-4 p-4 border rounded-lg bg-blue-50">
+          <div className="mt-4 p-4 border rounded-lg bg-primary/5">
             <div className="flex items-center gap-2 mb-2">
-              <AlertCircle className="h-4 w-4 text-blue-600" />
-              <Label htmlFor="completion-notes" className="text-sm font-medium text-blue-800">
+              <AlertCircle className="h-4 w-4 text-primary" />
+              <Label htmlFor="completion-notes" className="text-sm font-medium">
                 Agregar notas para: {checklistItems?.find(item => item.template_id === selectedItem)?.item_name}
               </Label>
             </div>

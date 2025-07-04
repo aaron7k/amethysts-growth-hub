@@ -56,6 +56,16 @@ export default function NewSale() {
     }
   }, [preselectedClientId, existingClients])
 
+  // Set preselected client when clients data is loaded
+  useEffect(() => {
+    if (preselectedClientId && existingClients && !selectedClientId) {
+      const clientExists = existingClients.some(client => client.id === preselectedClientId)
+      if (clientExists) {
+        setSelectedClientId(preselectedClientId)
+      }
+    }
+  }, [preselectedClientId, existingClients, selectedClientId])
+
   const { data: plans } = useQuery({
     queryKey: ['plans'],
     queryFn: async () => {

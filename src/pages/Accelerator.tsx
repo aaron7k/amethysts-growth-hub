@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { Calendar, Clock, CheckCircle, AlertTriangle, Target, Users, Settings, Play } from "lucide-react"
+import { Calendar, Clock, CheckCircle, AlertTriangle, Target, Users, Settings, Play, CalendarPlus } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -286,6 +286,31 @@ const Accelerator = () => {
     }
   }
 
+  // Extender plazo de etapa (prórroga)
+  const extendStageDeadline = async (stageId: string, stageName: string) => {
+    try {
+      const { error } = await supabase.rpc('extend_stage_deadline', {
+        p_stage_id: stageId,
+        p_days: 7
+      })
+      
+      if (error) throw error
+      
+      queryClient.invalidateQueries({ queryKey: ['accelerator-stages'] })
+      toast({
+        title: "Prórroga otorgada",
+        description: `Se han agregado 7 días adicionales a la etapa "${stageName}"`
+      })
+    } catch (error) {
+      console.error('Error extending stage deadline:', error)
+      toast({
+        title: "Error",
+        description: "No se pudo otorgar la prórroga",
+        variant: "destructive"
+      })
+    }
+  }
+
   // Activar/Desactivar etapa
   const toggleStageActivation = async (stageId: string, stageNumber: number, activate: boolean, clientId: string) => {
     try {
@@ -370,6 +395,17 @@ const Accelerator = () => {
     const diff = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
     return diff
   }
+
+  const getCurrentStageInfo = (stages: AcceleratorStage[], currentStage: number) => {
+    return stages?.find(stage => stage.stage_number === currentStage)
+  }
+
+  const getStageNames = () => [
+    { number: 1, name: "Nicho & Oferta", description: "Definición del nicho y oferta principal" },
+    { number: 2, name: "Infraestructura", description: "Configuración técnica y operativa" },
+    { number: 3, name: "Validación & Ventas", description: "Validación del mercado y primeras ventas" },
+    { number: 4, name: "Post-Meta", description: "Escalamiento y optimización" }
+  ]
 
   if (showTemplateManager) {
     return <ChecklistTemplateManager />
@@ -520,6 +556,17 @@ const Accelerator = () => {
                 </div>
                 
                 <div className="flex items-center gap-2">
+                  <Badge className="bg-primary text-primary-foreground">
+                    Etapa Actual: {program.current_stage}
+                  </Badge>
+                  {stages && (
+                    <Badge variant="outline">
+                      {getCurrentStageInfo(stages, program.current_stage)?.stage_name || `Etapa ${program.current_stage}`}
+                    </Badge>
+                  )}
+                </div>
+                
+                <div className="flex items-center gap-2">
                   <Target className="h-4 w-4 text-muted-foreground" />
                   <div>
                     <p className="text-sm font-medium">Progreso General</p>
@@ -537,8 +584,76 @@ const Accelerator = () => {
                 />
               </div>
 
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold mb-4">Timeline de las 4 Etapas</h3>
+                
+                {/* Timeline visual de las 4 etapas */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                  {getStageNames().map((stageInfo, index) => {
+                    const stageData = stages?.find(s => s.stage_number === stageInfo.number)
+                    const isCurrentStage = program.current_stage === stageInfo.number
+                    const isCompleted = stageData?.status === 'completed'
+                    const isOverdue = stageData?.status === 'overdue'
+                    
+                    return (
+                      <Card key={stageInfo.number} className={`relative ${
+                        isCurrentStage ? 'border-primary bg-primary/5' : ''
+                      } ${isCompleted ? 'border-green-500 bg-green-50 dark:bg-green-950/20' : ''} ${
+                        isOverdue ? 'border-red-500 bg-red-50 dark:bg-red-950/20' : ''
+                      }`}>
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                              isCurrentStage ? 'bg-primary text-primary-foreground' :
+                              isCompleted ? 'bg-green-500 text-white' :
+                              isOverdue ? 'bg-red-500 text-white' :
+                              'bg-muted text-muted-foreground'
+                            }`}>
+                              {stageInfo.number}
+                            </div>
+                            {isCurrentStage && (
+                              <Badge className="text-xs bg-primary">Actual</Badge>
+                            )}
+                          </div>
+                          
+                          <h4 className="font-semibold text-sm mb-1">{stageInfo.name}</h4>
+                          <p className="text-xs text-muted-foreground mb-2">{stageInfo.description}</p>
+                          
+                          {stageData && (
+                            <div className="space-y-1">
+                              <p className="text-xs">
+                                <strong>Inicio:</strong> {new Date(stageData.start_date).toLocaleDateString('es-ES')}
+                              </p>
+                              <p className="text-xs">
+                                <strong>Fin:</strong> {new Date(stageData.end_date).toLocaleDateString('es-ES')}
+                              </p>
+                              <div className="flex items-center justify-between mt-2">
+                                <Badge variant="outline" className="text-xs">
+                                  {getStatusLabel(stageData.status)}
+                                </Badge>
+                                {(stageData.status === 'in_progress' || stageData.status === 'overdue') && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-6 px-2 text-xs"
+                                    onClick={() => extendStageDeadline(stageData.id, stageData.stage_name)}
+                                  >
+                                    <CalendarPlus className="h-3 w-3 mr-1" />
+                                    +7d
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    )
+                  })}
+                </div>
+              </div>
+
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold">Timeline de Etapas</h3>
+                <h3 className="text-lg font-semibold">Detalle Completo</h3>
                 <div className="flex gap-2">
                   <DiscordChannelManager 
                     subscriptionId={program.subscription_id}
@@ -607,6 +722,17 @@ const Accelerator = () => {
                                   >
                                     <CheckCircle className="mr-1 h-3 w-3" />
                                     Completar
+                                  </Button>
+                                )}
+                                
+                                {(stage.status === 'in_progress' || stage.status === 'overdue') && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => extendStageDeadline(stage.id, stage.stage_name)}
+                                  >
+                                    <CalendarPlus className="mr-1 h-3 w-3" />
+                                    Pedir Prórroga
                                   </Button>
                                 )}
                               </div>

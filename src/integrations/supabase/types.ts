@@ -569,6 +569,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      extend_stage_deadline: {
+        Args: { p_stage_id: string; p_days?: number }
+        Returns: undefined
+      }
       get_stage_checklist_progress: {
         Args: { p_subscription_id: string; p_stage_number: number }
         Returns: {

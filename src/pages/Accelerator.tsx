@@ -582,7 +582,7 @@ const Accelerator = () => {
                     <div key={stage.id} className="space-y-4">
                       <div className="relative">
                         <div className="flex items-center gap-4">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium ${getStatusColor(stage.status)}`}>
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-primary-foreground text-sm font-medium ${getStatusColor(stage.status)}`}>
                             {stage.stage_number}
                           </div>
                           

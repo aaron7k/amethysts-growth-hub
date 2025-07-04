@@ -281,7 +281,7 @@ const StageChecklist = ({ subscriptionId, stageNumber, stageName, isCurrentStage
                     )}
                     
                     {item.notes && (
-                      <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
+                      <div className="mt-2 p-2 bg-muted rounded text-sm">
                         <strong>Notas:</strong> {item.notes}
                       </div>
                     )}

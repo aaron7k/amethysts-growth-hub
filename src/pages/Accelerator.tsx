@@ -322,6 +322,40 @@ const Accelerator = () => {
       
       if (error) throw error
 
+      // Si se está activando una etapa, actualizar current_stage del programa
+      if (activate && selectedProgramForActivation) {
+        // Obtener todas las etapas del programa para calcular la etapa actual
+        const { data: allStages, error: stagesError } = await supabase
+          .from('accelerator_stages')
+          .select('stage_number, is_activated')
+          .eq('subscription_id', selectedProgramForActivation.subscription_id)
+          .order('stage_number')
+        
+        if (stagesError) throw stagesError
+
+        // Incluir la etapa que acabamos de activar
+        const updatedStages = allStages?.map(stage => 
+          stage.stage_number === stageNumber 
+            ? { ...stage, is_activated: true }
+            : stage
+        ) || []
+
+        // Encontrar la etapa activada más alta
+        const highestActivatedStage = updatedStages
+          .filter(stage => stage.is_activated)
+          .reduce((max, stage) => Math.max(max, stage.stage_number), 0)
+
+        // Actualizar current_stage del programa
+        if (highestActivatedStage > 0) {
+          const { error: programError } = await supabase
+            .from('accelerator_programs')
+            .update({ current_stage: highestActivatedStage })
+            .eq('id', selectedProgramForActivation.id)
+          
+          if (programError) throw programError
+        }
+      }
+
       // Enviar webhook
       await fetch('https://hooks.infragrowthai.com/webhook/activate-phase', {
         method: 'POST',
@@ -335,6 +369,7 @@ const Accelerator = () => {
         })
       })
       
+      queryClient.invalidateQueries({ queryKey: ['accelerator-programs'] })
       queryClient.invalidateQueries({ queryKey: ['accelerator-stages'] })
       queryClient.invalidateQueries({ queryKey: ['activation-stages', selectedProgramForActivation?.subscription_id] })
       toast({

@@ -48,6 +48,7 @@ export function AlertsPanel({ open, onOpenChange }: AlertsPanelProps) {
             email
           )
         `)
+        .eq('status', 'pending')
         .order('created_at', { ascending: false })
         .limit(20)
 

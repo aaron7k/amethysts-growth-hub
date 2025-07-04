@@ -322,8 +322,8 @@ const Accelerator = () => {
       
       if (error) throw error
 
-      // Si se está activando una etapa, actualizar current_stage del programa
-      if (activate && selectedProgramForActivation) {
+      // Actualizar current_stage del programa siempre (activar o desactivar)
+      if (selectedProgramForActivation) {
         // Obtener todas las etapas del programa para calcular la etapa actual
         const { data: allStages, error: stagesError } = await supabase
           .from('accelerator_stages')
@@ -333,10 +333,10 @@ const Accelerator = () => {
         
         if (stagesError) throw stagesError
 
-        // Incluir la etapa que acabamos de activar
+        // Incluir la etapa que acabamos de cambiar
         const updatedStages = allStages?.map(stage => 
           stage.stage_number === stageNumber 
-            ? { ...stage, is_activated: true }
+            ? { ...stage, is_activated: activate }
             : stage
         ) || []
 
@@ -345,15 +345,14 @@ const Accelerator = () => {
           .filter(stage => stage.is_activated)
           .reduce((max, stage) => Math.max(max, stage.stage_number), 0)
 
-        // Actualizar current_stage del programa
-        if (highestActivatedStage > 0) {
-          const { error: programError } = await supabase
-            .from('accelerator_programs')
-            .update({ current_stage: highestActivatedStage })
-            .eq('id', selectedProgramForActivation.id)
-          
-          if (programError) throw programError
-        }
+        // Actualizar current_stage del programa (mínimo 1 si no hay etapas activadas)
+        const newCurrentStage = Math.max(1, highestActivatedStage)
+        const { error: programError } = await supabase
+          .from('accelerator_programs')
+          .update({ current_stage: newCurrentStage })
+          .eq('id', selectedProgramForActivation.id)
+        
+        if (programError) throw programError
       }
 
       // Enviar webhook

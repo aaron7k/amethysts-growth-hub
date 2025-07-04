@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
-import { ArrowLeft, User, Mail, Phone, ExternalLink, Calendar, DollarSign, CreditCard, Edit, Trash2, RefreshCw } from "lucide-react"
+import { ArrowLeft, User, Mail, Phone, ExternalLink, Calendar, DollarSign, CreditCard, Edit, Trash2, RefreshCw, CalendarCheck } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -87,6 +87,54 @@ export default function ClientDetail() {
       return data
     },
     enabled: !!id
+  })
+
+  // Fetch attendance data for this client
+  const { data: attendanceData } = useQuery({
+    queryKey: ['client-attendance', client?.email],
+    queryFn: async () => {
+      if (!client?.email) return { thisWeek: 0, total: 0, recentEvents: [] }
+      
+      const oneWeekAgo = new Date()
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
+      
+      // Get all events where this client was invited
+      const { data: events, error } = await supabase
+        .from('events')
+        .select('*')
+        .contains('invited_emails', [client.email])
+        .order('event_date', { ascending: false })
+      
+      if (error) throw error
+      
+      const thisWeekEvents = events?.filter(event => 
+        new Date(event.event_date) >= oneWeekAgo
+      ) || []
+      
+      const thisWeekAttendance = thisWeekEvents.filter(event =>
+        event.attended_emails.includes(client.email)
+      ).length
+      
+      const totalAttended = events?.filter(event =>
+        event.attended_emails.includes(client.email)
+      ).length || 0
+      
+      const recentEvents = events?.slice(0, 5).map(event => ({
+        id: event.id,
+        name: event.name,
+        date: event.event_date,
+        attended: event.attended_emails.includes(client.email),
+        invited: event.invited_emails.includes(client.email)
+      })) || []
+      
+      return {
+        thisWeek: thisWeekAttendance,
+        total: totalAttended,
+        totalInvited: events?.length || 0,
+        recentEvents
+      }
+    },
+    enabled: !!client?.email
   })
 
   const { data: plans } = useQuery({
@@ -465,6 +513,95 @@ export default function ClientDetail() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Attendance Summary */}
+      {attendanceData && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CalendarCheck className="h-5 w-5 text-primary" />
+              Resumen de Asistencias
+            </CardTitle>
+            <CardDescription>
+              Asistencia del alumno a eventos y clases
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="flex items-center gap-2">
+                <CalendarCheck className="h-4 w-4 text-green-600" />
+                <div>
+                  <p className="text-sm font-medium">Esta Semana</p>
+                  <p className="text-sm text-muted-foreground">{attendanceData.thisWeek} asistencias</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-blue-600" />
+                <div>
+                  <p className="text-sm font-medium">Total Asistencias</p>
+                  <p className="text-sm text-muted-foreground">{attendanceData.total} de {attendanceData.totalInvited}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <User className="h-4 w-4 text-purple-600" />
+                <div>
+                  <p className="text-sm font-medium">Tasa de Asistencia</p>
+                  <p className="text-sm text-muted-foreground">
+                    {attendanceData.totalInvited > 0 
+                      ? `${Math.round((attendanceData.total / attendanceData.totalInvited) * 100)}%`
+                      : '0%'
+                    }
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {attendanceData.recentEvents.length > 0 && (
+              <div>
+                <h4 className="font-medium mb-3">Últimos Eventos</h4>
+                <div className="space-y-2">
+                  {attendanceData.recentEvents.map((event) => (
+                    <div key={event.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <p className="font-medium text-sm">{event.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(event.date).toLocaleDateString('es-ES')}
+                        </p>
+                      </div>
+                      <Badge 
+                        className={
+                          event.attended 
+                            ? "bg-green-100 text-green-800" 
+                            : "bg-red-100 text-red-800"
+                        }
+                      >
+                        {event.attended ? 'Asistió' : 'No asistió'}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="mt-4">
+                  <Link to="/attendance">
+                    <Button variant="outline" size="sm">
+                      Ver todos los eventos
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            )}
+
+            {attendanceData.recentEvents.length === 0 && (
+              <div className="text-center py-6 text-muted-foreground">
+                <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p>No hay eventos registrados para este cliente</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Payment History */}
       {allInstallments.length > 0 && (

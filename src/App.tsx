@@ -21,6 +21,7 @@ import NewSale from "./pages/NewSale";
 import Onboarding from "./pages/Onboarding";
 import Alerts from "./pages/Alerts";
 import Accelerator from "./pages/Accelerator";
+import Attendance from "./pages/Attendance";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Documentation from "./pages/Documentation";
@@ -57,6 +58,7 @@ const App = () => (
                             <Route path="/onboarding" element={<Onboarding />} />
                             <Route path="/alerts" element={<Alerts />} />
                             <Route path="/accelerator" element={<Accelerator />} />
+                            <Route path="/attendance" element={<Attendance />} />
                             <Route path="/documentation" element={<Documentation />} />
                             <Route path="*" element={<NotFound />} />
                           </Routes>

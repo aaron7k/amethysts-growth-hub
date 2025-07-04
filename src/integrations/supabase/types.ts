@@ -301,6 +301,39 @@ export type Database = {
         }
         Relationships: []
       }
+      events: {
+        Row: {
+          attended_emails: string[]
+          created_at: string
+          description: string | null
+          event_date: string
+          id: string
+          invited_emails: string[]
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          attended_emails?: string[]
+          created_at?: string
+          description?: string | null
+          event_date: string
+          id?: string
+          invited_emails?: string[]
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          attended_emails?: string[]
+          created_at?: string
+          description?: string | null
+          event_date?: string
+          id?: string
+          invited_emails?: string[]
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       installments: {
         Row: {
           amount_usd: number

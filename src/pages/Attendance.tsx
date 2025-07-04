@@ -8,9 +8,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Calendar, Users, UserCheck, UserX, Plus, CheckCircle, Edit, Trash2 } from "lucide-react"
+import { Calendar, Users, UserCheck, UserX, Plus, CheckCircle, Edit, Trash2, CalendarDays } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { format } from "date-fns"
+import { format, startOfWeek, endOfWeek, startOfDay, endOfDay, parseISO } from "date-fns"
 import { es } from "date-fns/locale"
 
 interface Event {
@@ -25,9 +25,9 @@ interface Event {
 }
 
 export default function Attendance() {
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
+  const [showAllWeeks, setShowAllWeeks] = useState(false)
   const [newEvent, setNewEvent] = useState({
     name: '',
     event_date: '',
@@ -38,8 +38,21 @@ export default function Attendance() {
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
+  // Get current week boundaries (Monday to Sunday)
+  const getCurrentWeekBounds = () => {
+    const now = new Date()
+    const monday = startOfWeek(now, { weekStartsOn: 1 }) // 1 = Monday
+    const sunday = endOfWeek(now, { weekStartsOn: 1 })
+    return {
+      start: startOfDay(monday),
+      end: endOfDay(sunday)
+    }
+  }
+
+  const { start: weekStart, end: weekEnd } = getCurrentWeekBounds()
+
   // Fetch events
-  const { data: events, isLoading } = useQuery({
+  const { data: allEvents, isLoading } = useQuery({
     queryKey: ['events'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -52,42 +65,29 @@ export default function Attendance() {
     }
   })
 
-  // Create event mutation
-  const createEventMutation = useMutation({
-    mutationFn: async (eventData: typeof newEvent) => {
-      const invitedEmailsArray = eventData.invited_emails
-        .split(',')
-        .map(email => email.trim())
-        .filter(email => email.length > 0)
+  // Filter events based on current view
+  const events = showAllWeeks 
+    ? allEvents 
+    : allEvents?.filter(event => {
+        const eventDate = parseISO(event.event_date)
+        return eventDate >= weekStart && eventDate <= weekEnd
+      })
 
-      const { error } = await supabase
-        .from('events')
-        .insert({
-          name: eventData.name,
-          event_date: eventData.event_date,
-          invited_emails: invitedEmailsArray,
-          description: eventData.description || null
-        })
-      
-      if (error) throw error
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['events'] })
-      setIsCreateDialogOpen(false)
-      setNewEvent({ name: '', event_date: '', invited_emails: '', description: '' })
-      toast({
-        title: "Evento creado",
-        description: "El evento ha sido creado exitosamente."
-      })
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "No se pudo crear el evento.",
-        variant: "destructive"
-      })
-    }
-  })
+  // Group events by week when showing all
+  const groupEventsByWeek = (events: Event[]) => {
+    const grouped: { [key: string]: Event[] } = {}
+    events?.forEach(event => {
+      const eventDate = parseISO(event.event_date)
+      const monday = startOfWeek(eventDate, { weekStartsOn: 1 })
+      const weekKey = format(monday, 'yyyy-MM-dd')
+      if (!grouped[weekKey]) {
+        grouped[weekKey] = []
+      }
+      grouped[weekKey].push(event)
+    })
+    return grouped
+  }
+
 
   // Update event mutation
   const updateEventMutation = useMutation({
@@ -193,9 +193,6 @@ export default function Attendance() {
     }
   })
 
-  const handleCreateEvent = () => {
-    createEventMutation.mutate(newEvent)
-  }
 
   const handleEditEvent = (event: Event) => {
     setSelectedEvent(event)
@@ -243,83 +240,151 @@ export default function Attendance() {
         <div>
           <h1 className="text-3xl font-bold">Asistencia de Alumnos</h1>
           <p className="text-muted-foreground">
-            Gestiona eventos y rastrea la asistencia de los alumnos
+            {showAllWeeks 
+              ? "Todos los eventos agrupados por semana"
+              : `Eventos de esta semana (${format(weekStart, 'dd/MM')} - ${format(weekEnd, 'dd/MM')})`
+            }
           </p>
         </div>
         
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Crear Evento
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Crear Nuevo Evento</DialogTitle>
-              <DialogDescription>
-                Crea un nuevo evento y agrega los emails de los invitados.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="name">Nombre del Evento</Label>
-                <Input
-                  id="name"
-                  value={newEvent.name}
-                  onChange={(e) => setNewEvent({...newEvent, name: e.target.value})}
-                  placeholder="Ej: Clase de Marketing Digital"
-                />
-              </div>
-              <div>
-                <Label htmlFor="date">Fecha</Label>
-                <Input
-                  id="date"
-                  type="date"
-                  value={newEvent.event_date}
-                  onChange={(e) => setNewEvent({...newEvent, event_date: e.target.value})}
-                />
-              </div>
-              <div>
-                <Label htmlFor="emails">Emails de Invitados (separados por comas)</Label>
-                <Textarea
-                  id="emails"
-                  value={newEvent.invited_emails}
-                  onChange={(e) => setNewEvent({...newEvent, invited_emails: e.target.value})}
-                  placeholder="email1@ejemplo.com, email2@ejemplo.com"
-                  rows={3}
-                />
-              </div>
-              <div>
-                <Label htmlFor="description">Descripción (opcional)</Label>
-                <Textarea
-                  id="description"
-                  value={newEvent.description}
-                  onChange={(e) => setNewEvent({...newEvent, description: e.target.value})}
-                  placeholder="Descripción del evento..."
-                  rows={2}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button 
-                onClick={handleCreateEvent}
-                disabled={!newEvent.name || !newEvent.event_date || createEventMutation.isPending}
-              >
-                {createEventMutation.isPending ? "Creando..." : "Crear Evento"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <Button 
+          variant={showAllWeeks ? "default" : "outline"}
+          onClick={() => setShowAllWeeks(!showAllWeeks)}
+        >
+          <CalendarDays className="mr-2 h-4 w-4" />
+          {showAllWeeks ? "Ver Semana Actual" : "Ver Todas las Semanas"}
+        </Button>
       </div>
 
       {events?.length === 0 ? (
         <Card>
           <CardContent className="p-6 text-center">
             <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">No hay eventos creados aún</p>
+            <p className="text-muted-foreground">
+              {showAllWeeks ? "No hay eventos creados aún" : "No hay eventos en esta semana"}
+            </p>
           </CardContent>
         </Card>
+      ) : showAllWeeks ? (
+        <div className="space-y-8">
+          {Object.entries(groupEventsByWeek(allEvents || [])).map(([weekStart, weekEvents]) => {
+            const monday = parseISO(weekStart)
+            const sunday = endOfWeek(monday, { weekStartsOn: 1 })
+            return (
+              <div key={weekStart} className="space-y-4">
+                <h2 className="text-xl font-semibold border-b pb-2">
+                  Semana del {format(monday, 'dd/MM/yyyy')} al {format(sunday, 'dd/MM/yyyy')}
+                </h2>
+                <div className="grid gap-4">
+                  {weekEvents.map((event) => (
+                    <Card key={event.id}>
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <CardTitle className="flex items-center gap-2">
+                              <Calendar className="h-5 w-5 text-primary" />
+                              {event.name}
+                            </CardTitle>
+                            <CardDescription>
+                              {format(new Date(event.event_date), 'PPP', { locale: es })}
+                            </CardDescription>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline">
+                              {getAttendanceRate(event)}% asistencia
+                            </Badge>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditEvent(event)}
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteEvent(event.id)}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      
+                      <CardContent>
+                        {event.description && (
+                          <p className="text-sm text-muted-foreground mb-4">{event.description}</p>
+                        )}
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                          <div className="flex items-center gap-2">
+                            <Users className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                              <p className="text-sm font-medium">Invitados</p>
+                              <p className="text-sm text-muted-foreground">{event.invited_emails.length}</p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            <UserCheck className="h-4 w-4 text-green-600" />
+                            <div>
+                              <p className="text-sm font-medium">Asistieron</p>
+                              <p className="text-sm text-muted-foreground">{event.attended_emails.length}</p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            <UserX className="h-4 w-4 text-red-600" />
+                            <div>
+                              <p className="text-sm font-medium">No Asistieron</p>
+                              <p className="text-sm text-muted-foreground">
+                                {event.invited_emails.length - event.attended_emails.length}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          <h4 className="font-medium">Lista de Asistencia</h4>
+                          <div className="space-y-2 max-h-60 overflow-y-auto">
+                            {event.invited_emails.map((email) => {
+                              const hasAttended = event.attended_emails.includes(email)
+                              return (
+                                <div key={email} className="flex items-center justify-between p-2 border rounded">
+                                  <span className="text-sm">{email}</span>
+                                  <div className="flex items-center gap-2">
+                                    {hasAttended ? (
+                                      <Badge className="bg-green-100 text-green-800">
+                                        <CheckCircle className="h-3 w-3 mr-1" />
+                                        Asistió
+                                      </Badge>
+                                    ) : (
+                                      <Badge variant="outline" className="text-red-600">
+                                        No asistió
+                                      </Badge>
+                                    )}
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => markAttendance(event.id, email, !hasAttended)}
+                                    >
+                                      {hasAttended ? 'Marcar ausente' : 'Marcar presente'}
+                                    </Button>
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )
+          })}
+        </div>
       ) : (
         <div className="grid gap-6">
           {events?.map((event) => (

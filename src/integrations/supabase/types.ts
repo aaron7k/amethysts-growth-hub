@@ -309,6 +309,7 @@ export type Database = {
           event_date: string
           id: string
           invited_emails: string[]
+          meeting_code: string | null
           name: string
           updated_at: string
         }
@@ -319,6 +320,7 @@ export type Database = {
           event_date: string
           id?: string
           invited_emails?: string[]
+          meeting_code?: string | null
           name: string
           updated_at?: string
         }
@@ -329,6 +331,7 @@ export type Database = {
           event_date?: string
           id?: string
           invited_emails?: string[]
+          meeting_code?: string | null
           name?: string
           updated_at?: string
         }

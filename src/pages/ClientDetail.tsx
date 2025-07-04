@@ -31,8 +31,16 @@ const changePlanSchema = z.object({
   notes: z.string().optional()
 })
 
+const clientSchema = z.object({
+  full_name: z.string().min(1, "El nombre completo es requerido"),
+  email: z.string().email("Email válido requerido").optional().or(z.literal("")),
+  phone_number: z.string().optional(),
+  drive_folder_url: z.string().url("URL válida requerida").optional().or(z.literal(""))
+})
+
 type SubscriptionFormData = z.infer<typeof subscriptionSchema>
 type ChangePlanFormData = z.infer<typeof changePlanSchema>
+type ClientFormData = z.infer<typeof clientSchema>
 
 export default function ClientDetail() {
   const { id } = useParams<{ id: string }>()
@@ -42,6 +50,7 @@ export default function ClientDetail() {
   const [isChangePlanDialogOpen, setIsChangePlanDialogOpen] = useState(false)
   const [subscriptionToDelete, setSubscriptionToDelete] = useState<any>(null)
   const [subscriptionToChangePlan, setSubscriptionToChangePlan] = useState<any>(null)
+  const [isEditClientDialogOpen, setIsEditClientDialogOpen] = useState(false)
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
@@ -62,6 +71,16 @@ export default function ClientDetail() {
       total_cost_usd: "",
       start_date: "",
       notes: ""
+    }
+  })
+
+  const clientForm = useForm<ClientFormData>({
+    resolver: zodResolver(clientSchema),
+    defaultValues: {
+      full_name: "",
+      email: "",
+      phone_number: "",
+      drive_folder_url: ""
     }
   })
   
@@ -254,6 +273,39 @@ export default function ClientDetail() {
     }
   })
 
+  const updateClientMutation = useMutation({
+    mutationFn: async (data: ClientFormData) => {
+      const { error } = await supabase
+        .from('clients')
+        .update({
+          full_name: data.full_name,
+          email: data.email || null,
+          phone_number: data.phone_number || null,
+          drive_folder_url: data.drive_folder_url || null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id!)
+
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['client', id] })
+      toast({
+        title: "Cliente actualizado",
+        description: "Los datos del cliente han sido actualizados exitosamente."
+      })
+      setIsEditClientDialogOpen(false)
+      clientForm.reset()
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el cliente. Inténtalo de nuevo.",
+        variant: "destructive"
+      })
+    }
+  })
+
   const handleEditSubscription = (subscription: any) => {
     setEditingSubscription(subscription)
     form.reset({
@@ -281,6 +333,16 @@ export default function ClientDetail() {
     setIsChangePlanDialogOpen(true)
   }
 
+  const handleEditClient = () => {
+    clientForm.reset({
+      full_name: client?.full_name || "",
+      email: client?.email || "",
+      phone_number: client?.phone_number || "",
+      drive_folder_url: client?.drive_folder_url || ""
+    })
+    setIsEditClientDialogOpen(true)
+  }
+
   const onSubmit = (data: SubscriptionFormData) => {
     if (editingSubscription) {
       updateSubscriptionMutation.mutate({ id: editingSubscription.id, data })
@@ -291,6 +353,10 @@ export default function ClientDetail() {
     if (subscriptionToChangePlan) {
       changePlanMutation.mutate({ subscriptionId: subscriptionToChangePlan.id, data })
     }
+  }
+
+  const onClientSubmit = (data: ClientFormData) => {
+    updateClientMutation.mutate(data)
   }
 
   const getStatusColor = (status: string) => {
@@ -367,9 +433,19 @@ export default function ClientDetail() {
         {/* Client Information */}
         <Card className="lg:col-span-1">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5 text-primary" />
-              Información del Cliente
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <User className="h-5 w-5 text-primary" />
+                Información del Cliente
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleEditClient}
+                title="Editar datos del cliente"
+              >
+                <Edit className="h-3 w-3" />
+              </Button>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -865,6 +941,79 @@ export default function ClientDetail() {
               {deleteSubscriptionMutation.isPending ? "Eliminando..." : "Eliminar"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Client Dialog */}
+      <Dialog open={isEditClientDialogOpen} onOpenChange={setIsEditClientDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Editar Cliente</DialogTitle>
+            <DialogDescription>
+              Actualiza la información del cliente aquí.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...clientForm}>
+            <form onSubmit={clientForm.handleSubmit(onClientSubmit)} className="space-y-4">
+              <FormField
+                control={clientForm.control}
+                name="full_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nombre Completo</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={clientForm.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="email" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={clientForm.control}
+                name="phone_number"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Teléfono</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={clientForm.control}
+                name="drive_folder_url"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>URL Carpeta Drive</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="url" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button type="submit" disabled={updateClientMutation.isPending}>
+                  {updateClientMutation.isPending ? "Actualizando..." : "Actualizar Cliente"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
     </div>

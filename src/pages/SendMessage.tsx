@@ -549,13 +549,27 @@ export default function SendMessage() {
                    )}
                 </div>
               ) : messageType === 'image' ? (
-                /* Input normal para imagen */
-                <>
+                /* Input para imagen con preview */
+                <div className="space-y-4 flex flex-col items-center">
+                  {/* Preview de imagen */}
+                  {file && file.type.startsWith('image/') && (
+                    <div className="relative">
+                      <img
+                        src={URL.createObjectURL(file)}
+                        alt="Preview"
+                        className="w-full max-w-md rounded-lg border object-cover"
+                        style={{ maxHeight: '300px' }}
+                      />
+                    </div>
+                  )}
+                  
                   <Input
                     type="file"
                     onChange={handleFileChange}
                     accept="image/*"
+                    className="cursor-pointer max-w-md"
                   />
+                  
                    {file && (
                      <div className="flex items-center gap-2">
                        <Badge variant="outline" className="flex items-center gap-2">
@@ -572,7 +586,7 @@ export default function SendMessage() {
                        </Button>
                      </div>
                    )}
-                </>
+                </div>
               ) : (
                 /* Input normal por defecto */
                 <>

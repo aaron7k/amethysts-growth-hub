@@ -93,7 +93,14 @@ export default function SendMessage() {
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
+      
+      // Try to use mp3 format, fallback to webm
+      let mimeType = 'audio/mpeg';
+      if (!MediaRecorder.isTypeSupported('audio/mpeg')) {
+        mimeType = 'audio/webm';
+      }
+      
+      const recorder = new MediaRecorder(stream, { mimeType });
       mediaRecorder.current = recorder;
       
       const chunks: BlobPart[] = [];
@@ -105,11 +112,11 @@ export default function SendMessage() {
       };
       
       recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/webm' });
+        const blob = new Blob(chunks, { type: 'audio/mp3' });
         setAudioBlob(blob);
         
         // Crear archivo simulado para mostrar en la UI
-        const audioFile = new File([blob], `grabacion_${Date.now()}.webm`, { type: 'audio/webm' });
+        const audioFile = new File([blob], `grabacion_${Date.now()}.mp3`, { type: 'audio/mp3' });
         setFile(audioFile);
         
         // Detener el stream

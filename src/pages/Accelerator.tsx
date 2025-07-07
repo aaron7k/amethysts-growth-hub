@@ -358,6 +358,27 @@ const Accelerator = () => {
       // Obtener información completa de la etapa para el webhook
       const stageInfo = activationStages?.find(stage => stage.stage_number === stageNumber)
       
+      // Obtener canal de Discord del usuario
+      let discordChannel = '#aceleradora' // Default
+      try {
+        const { data: discordService } = await supabase
+          .from('provisioned_services')
+          .select('access_details')
+          .eq('subscription_id', selectedProgramForActivation?.subscription_id)
+          .eq('service_type', 'discord_channel')
+          .eq('is_active', true)
+          .single()
+        
+        if (discordService?.access_details && typeof discordService.access_details === 'object') {
+          const accessDetails = discordService.access_details as any
+          if (accessDetails.channel_category) {
+            discordChannel = `<#${accessDetails.channel_category}>`
+          }
+        }
+      } catch (error) {
+        console.log('Could not fetch Discord channel, using default:', error)
+      }
+      
       // Enviar webhook con información completa
       await fetch('https://hooks.infragrowthai.com/webhook/activate-phase', {
         method: 'POST',
@@ -374,7 +395,7 @@ const Accelerator = () => {
           end_date: stageInfo?.end_date,
           program_day: selectedProgramForActivation?.program_start_date ? 
             Math.floor((new Date().getTime() - new Date(selectedProgramForActivation.program_start_date).getTime()) / (1000 * 60 * 60 * 24)) + 1 : null,
-          discord_channel: '#aceleradora', // Default, se puede personalizar por cliente
+          discord_channel: discordChannel,
           timestamp: new Date().toISOString(),
           // Mantener compatibilidad con formato anterior
           phase: stageNumber,

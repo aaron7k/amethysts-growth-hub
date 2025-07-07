@@ -106,12 +106,18 @@ export default function SendMessage() {
       console.log('Stream obtenido:', stream);
       
       // Mostrar preview para video
+      console.log('messageType:', messageType);
+      console.log('videoPreview.current:', videoPreview.current);
       if (messageType === 'video' && videoPreview.current) {
         console.log('Asignando stream al video preview');
         videoPreview.current.srcObject = stream;
         // Asegurar que el video se reproduce
-        videoPreview.current.play().catch(console.error);
+        videoPreview.current.play().catch(err => {
+          console.error('Error al reproducir video:', err);
+        });
         console.log('Video preview configurado');
+      } else {
+        console.log('No se puede asignar preview - messageType:', messageType, 'videoPreview:', !!videoPreview.current);
       }
       
       // Usar el mejor formato disponible

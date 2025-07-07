@@ -355,13 +355,28 @@ const Accelerator = () => {
         if (programError) throw programError
       }
 
-      // Enviar webhook
+      // Obtener información completa de la etapa para el webhook
+      const stageInfo = activationStages?.find(stage => stage.stage_number === stageNumber)
+      
+      // Enviar webhook con información completa
       await fetch('https://hooks.infragrowthai.com/webhook/activate-phase', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          alert_id: `manual-activation-${Date.now()}`,
+          client_id: selectedProgramForActivation?.subscriptions.client_id,
+          subscription_id: selectedProgramForActivation?.subscription_id,
+          stage_number: stageNumber,
+          stage_name: stageInfo?.stage_name || `Etapa ${stageNumber}`,
+          start_date: stageInfo?.start_date,
+          end_date: stageInfo?.end_date,
+          program_day: selectedProgramForActivation?.program_start_date ? 
+            Math.floor((new Date().getTime() - new Date(selectedProgramForActivation.program_start_date).getTime()) / (1000 * 60 * 60 * 24)) + 1 : null,
+          discord_channel: '#aceleradora', // Default, se puede personalizar por cliente
+          timestamp: new Date().toISOString(),
+          // Mantener compatibilidad con formato anterior
           phase: stageNumber,
           user_id: clientId,
           activate: activate

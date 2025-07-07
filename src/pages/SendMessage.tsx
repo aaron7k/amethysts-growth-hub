@@ -94,10 +94,24 @@ export default function SendMessage() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
-      // Try to use mp3 format, fallback to webm
-      let mimeType = 'audio/mpeg';
-      if (!MediaRecorder.isTypeSupported('audio/mpeg')) {
-        mimeType = 'audio/webm';
+      // Verificar qué formatos soporta el navegador
+      let mimeType = 'audio/webm';
+      let fileExtension = 'webm';
+      let fileType = 'audio/webm';
+      
+      // Probar diferentes formatos en orden de preferencia
+      if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+        mimeType = 'audio/webm;codecs=opus';
+        fileExtension = 'webm';
+        fileType = 'audio/webm';
+      } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+        mimeType = 'audio/mp4';
+        fileExtension = 'mp4';
+        fileType = 'audio/mp4';
+      } else if (MediaRecorder.isTypeSupported('audio/mpeg')) {
+        mimeType = 'audio/mpeg';
+        fileExtension = 'mp3';
+        fileType = 'audio/mpeg';
       }
       
       const recorder = new MediaRecorder(stream, { mimeType });
@@ -112,11 +126,12 @@ export default function SendMessage() {
       };
       
       recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/mp3' });
+        // Usar el tipo MIME real que produjo el MediaRecorder
+        const blob = new Blob(chunks, { type: mimeType });
         setAudioBlob(blob);
         
-        // Crear archivo simulado para mostrar en la UI
-        const audioFile = new File([blob], `grabacion_${Date.now()}.mp3`, { type: 'audio/mp3' });
+        // Crear archivo con el formato correcto
+        const audioFile = new File([blob], `grabacion_${Date.now()}.${fileExtension}`, { type: mimeType });
         setFile(audioFile);
         
         // Detener el stream

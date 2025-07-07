@@ -92,7 +92,7 @@ serve(async (req) => {
         start_date: alert.metadata?.start_date,
         end_date: alert.metadata?.end_date,
         program_day: alert.metadata?.program_day,
-        discord_channel: '#aceleradora', // Canal de Discord por defecto
+        discord_channel: alert.slack_channel, // Canal de Discord del usuario
         timestamp: alert.created_at
       }
 

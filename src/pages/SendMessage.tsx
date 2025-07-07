@@ -25,12 +25,15 @@ export default function SendMessage() {
   const [isSending, setIsSending] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   
-  // Estados para grabación de audio
+  // Estados para grabación de audio y video
   const [isRecording, setIsRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
   const [recordingTime, setRecordingTime] = useState(0);
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const recordingInterval = useRef<NodeJS.Timeout | null>(null);
+  const videoPreview = useRef<HTMLVideoElement | null>(null);
+  const mediaStream = useRef<MediaStream | null>(null);
 
   // Limpiar grabación al cambiar tipo de mensaje o desmontar
   useEffect(() => {
@@ -45,8 +48,9 @@ export default function SendMessage() {
   }, []);
 
   useEffect(() => {
-    if (messageType !== 'audio') {
+    if (messageType !== 'audio' && messageType !== 'video') {
       setAudioBlob(null);
+      setVideoBlob(null);
       if (isRecording) {
         stopRecording();
       }
@@ -92,12 +96,30 @@ export default function SendMessage() {
 
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const constraints = messageType === 'video' 
+        ? { audio: true, video: true }
+        : { audio: true };
       
-      // Usar el mejor formato disponible pero identificar como MP3
-      let mimeType = 'audio/webm';
-      if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
-        mimeType = 'audio/webm;codecs=opus';
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      mediaStream.current = stream;
+      
+      // Mostrar preview para video
+      if (messageType === 'video' && videoPreview.current) {
+        videoPreview.current.srcObject = stream;
+      }
+      
+      // Usar el mejor formato disponible
+      let mimeType = messageType === 'video' ? 'video/webm' : 'audio/webm';
+      if (messageType === 'video') {
+        if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')) {
+          mimeType = 'video/webm;codecs=vp9,opus';
+        } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')) {
+          mimeType = 'video/webm;codecs=vp8,opus';
+        }
+      } else {
+        if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+          mimeType = 'audio/webm;codecs=opus';
+        }
       }
       
       const recorder = new MediaRecorder(stream, { mimeType });
@@ -114,14 +136,27 @@ export default function SendMessage() {
       recorder.onstop = () => {
         // Crear blob con el tipo original para mantener la integridad
         const blob = new Blob(chunks, { type: mimeType });
-        setAudioBlob(blob);
         
-        // Crear archivo identificado como MP3 para el envío
-        const audioFile = new File([blob], `grabacion_${Date.now()}.mp3`, { type: 'audio/mpeg' });
-        setFile(audioFile);
+        if (messageType === 'video') {
+          setVideoBlob(blob);
+          // Crear archivo identificado como MP4 para el envío
+          const videoFile = new File([blob], `video_${Date.now()}.mp4`, { type: 'video/mp4' });
+          setFile(videoFile);
+        } else {
+          setAudioBlob(blob);
+          // Crear archivo identificado como MP3 para el envío
+          const audioFile = new File([blob], `grabacion_${Date.now()}.mp3`, { type: 'audio/mpeg' });
+          setFile(audioFile);
+        }
         
         // Detener el stream
         stream.getTracks().forEach(track => track.stop());
+        mediaStream.current = null;
+        
+        // Limpiar preview de video
+        if (videoPreview.current) {
+          videoPreview.current.srcObject = null;
+        }
       };
       
       recorder.start();
@@ -136,7 +171,7 @@ export default function SendMessage() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "No se pudo acceder al micrófono. Verifica los permisos.",
+        description: `No se pudo acceder a ${messageType === 'video' ? 'la cámara/micrófono' : 'el micrófono'}. Verifica los permisos.`,
         variant: "destructive"
       });
     }
@@ -163,11 +198,13 @@ export default function SendMessage() {
   const clearFile = () => {
     setFile(null);
     setAudioBlob(null);
+    setVideoBlob(null);
   };
 
   const clearRecording = () => {
     setFile(null);
     setAudioBlob(null);
+    setVideoBlob(null);
     setRecordingTime(0);
   };
 
@@ -242,6 +279,7 @@ export default function SendMessage() {
       setMessage('');
       setFile(null);
       setAudioBlob(null);
+      setVideoBlob(null);
       setMentionAll(false);
       
     } catch (error) {
@@ -412,16 +450,119 @@ export default function SendMessage() {
                      </div>
                    )}
                 </div>
-              ) : (
-                /* Input normal para imagen y video */
+              ) : messageType === 'video' ? (
+                /* Controles de grabación de video */
+                <div className="space-y-4">
+                  {/* Preview de video durante grabación */}
+                  {isRecording && (
+                    <div className="relative">
+                      <video
+                        ref={videoPreview}
+                        autoPlay
+                        muted
+                        className="w-full max-w-md rounded-lg border bg-black"
+                        style={{ aspectRatio: '16/9' }}
+                      />
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center gap-2">
+                    {!isRecording && !file && (
+                      <Button onClick={startRecording} variant="outline" className="flex items-center gap-2">
+                        <Video className="h-4 w-4" />
+                        Grabar Video
+                      </Button>
+                    )}
+                    
+                    {isRecording && (
+                      <div className="flex items-center gap-4">
+                        <Button onClick={stopRecording} variant="destructive" className="flex items-center gap-2">
+                          <Square className="h-4 w-4" />
+                          Detener
+                        </Button>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                          <span className="text-sm font-mono">{formatTime(recordingTime)}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Input de archivo alternativo */}
+                  <div className="text-center text-sm text-muted-foreground">
+                    <span>o</span>
+                  </div>
+                  
+                  <Input
+                    type="file"
+                    onChange={handleFileChange}
+                    accept="video/*"
+                    className="cursor-pointer"
+                  />
+                  
+                   {file && (
+                     <div className="flex items-center gap-2">
+                       <Badge variant="outline" className="flex items-center gap-2">
+                         <Video className="h-4 w-4" />
+                         {file.name}
+                         {videoBlob && <span className="text-xs">(Grabado)</span>}
+                       </Badge>
+                       <div className="flex gap-1">
+                         {videoBlob && (
+                           <Button 
+                             onClick={clearRecording} 
+                             size="sm" 
+                             variant="outline"
+                             className="h-8 px-2"
+                           >
+                             <RotateCcw className="h-3 w-3" />
+                             Regrabar
+                           </Button>
+                         )}
+                         <Button 
+                           onClick={clearFile} 
+                           size="sm" 
+                           variant="outline"
+                           className="h-8 w-8 p-0"
+                         >
+                           <X className="h-3 w-3" />
+                         </Button>
+                       </div>
+                     </div>
+                   )}
+                </div>
+              ) : messageType === 'image' ? (
+                /* Input normal para imagen */
                 <>
                   <Input
                     type="file"
                     onChange={handleFileChange}
-                    accept={
-                      messageType === 'image' ? 'image/*' :
-                      messageType === 'video' ? 'video/*' : '*'
-                    }
+                    accept="image/*"
+                  />
+                   {file && (
+                     <div className="flex items-center gap-2">
+                       <Badge variant="outline" className="flex items-center gap-2">
+                         <Image className="h-4 w-4" />
+                         {file.name}
+                       </Badge>
+                       <Button 
+                         onClick={clearFile} 
+                         size="sm" 
+                         variant="outline"
+                         className="h-8 w-8 p-0"
+                       >
+                         <X className="h-3 w-3" />
+                       </Button>
+                     </div>
+                   )}
+                </>
+              ) : (
+                /* Input normal por defecto */
+                <>
+                  <Input
+                    type="file"
+                    onChange={handleFileChange}
+                    accept="*"
                   />
                    {file && (
                      <div className="flex items-center gap-2">

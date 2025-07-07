@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { MessageSquare, Send, Image, Video, Mic, AtSign, Square, Play } from 'lucide-react';
+import { MessageSquare, Send, Image, Video, Mic, AtSign, Square, Play, X, RotateCcw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export default function SendMessage() {
@@ -150,6 +150,17 @@ export default function SendMessage() {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const clearFile = () => {
+    setFile(null);
+    setAudioBlob(null);
+  };
+
+  const clearRecording = () => {
+    setFile(null);
+    setAudioBlob(null);
+    setRecordingTime(0);
   };
 
   const handleConfirmSend = () => {
@@ -362,13 +373,36 @@ export default function SendMessage() {
                     className="cursor-pointer"
                   />
                   
-                  {file && (
-                    <Badge variant="outline" className="flex items-center gap-2 w-fit">
-                      <Mic className="h-4 w-4" />
-                      {file.name}
-                      {audioBlob && <span className="text-xs">(Grabado)</span>}
-                    </Badge>
-                  )}
+                   {file && (
+                     <div className="flex items-center gap-2">
+                       <Badge variant="outline" className="flex items-center gap-2">
+                         <Mic className="h-4 w-4" />
+                         {file.name}
+                         {audioBlob && <span className="text-xs">(Grabado)</span>}
+                       </Badge>
+                       <div className="flex gap-1">
+                         {audioBlob && (
+                           <Button 
+                             onClick={clearRecording} 
+                             size="sm" 
+                             variant="outline"
+                             className="h-8 px-2"
+                           >
+                             <RotateCcw className="h-3 w-3" />
+                             Regrabar
+                           </Button>
+                         )}
+                         <Button 
+                           onClick={clearFile} 
+                           size="sm" 
+                           variant="outline"
+                           className="h-8 w-8 p-0"
+                         >
+                           <X className="h-3 w-3" />
+                         </Button>
+                       </div>
+                     </div>
+                   )}
                 </div>
               ) : (
                 /* Input normal para imagen y video */
@@ -381,12 +415,22 @@ export default function SendMessage() {
                       messageType === 'video' ? 'video/*' : '*'
                     }
                   />
-                  {file && (
-                    <Badge variant="outline" className="flex items-center gap-2 w-fit">
-                      {getMessageTypeIcon(messageType)}
-                      {file.name}
-                    </Badge>
-                  )}
+                   {file && (
+                     <div className="flex items-center gap-2">
+                       <Badge variant="outline" className="flex items-center gap-2">
+                         {getMessageTypeIcon(messageType)}
+                         {file.name}
+                       </Badge>
+                       <Button 
+                         onClick={clearFile} 
+                         size="sm" 
+                         variant="outline"
+                         className="h-8 w-8 p-0"
+                       >
+                         <X className="h-3 w-3" />
+                       </Button>
+                     </div>
+                   )}
                 </>
               )}
             </div>

@@ -466,19 +466,22 @@ export default function SendMessage() {
               ) : messageType === 'video' ? (
                 /* Controles de grabación de video */
                 <div className="space-y-4">
-                  {/* Preview de video durante grabación */}
-                  {isRecording && (
-                    <div className="relative">
-                       <video
-                         ref={videoPreview}
-                         autoPlay
-                         muted
-                         playsInline
-                         className="w-full max-w-md rounded-lg border bg-black"
-                         style={{ aspectRatio: '16/9' }}
-                       />
-                    </div>
-                  )}
+                  {/* Preview de video siempre visible para video */}
+                  <div className="relative">
+                    <video
+                      ref={videoPreview}
+                      autoPlay
+                      muted
+                      playsInline
+                      className="w-full max-w-md rounded-lg border bg-black"
+                      style={{ aspectRatio: '16/9' }}
+                    />
+                    {!isRecording && !file && (
+                      <div className="absolute inset-0 flex items-center justify-center text-white/70">
+                        <span className="text-sm">Preview aparecerá aquí</span>
+                      </div>
+                    )}
+                  </div>
                   
                   <div className="flex items-center gap-2">
                     {!isRecording && !file && (

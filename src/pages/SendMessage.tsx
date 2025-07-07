@@ -106,6 +106,8 @@ export default function SendMessage() {
       // Mostrar preview para video
       if (messageType === 'video' && videoPreview.current) {
         videoPreview.current.srcObject = stream;
+        // Asegurar que el video se reproduce
+        videoPreview.current.play().catch(console.error);
       }
       
       // Usar el mejor formato disponible
@@ -456,13 +458,14 @@ export default function SendMessage() {
                   {/* Preview de video durante grabación */}
                   {isRecording && (
                     <div className="relative">
-                      <video
-                        ref={videoPreview}
-                        autoPlay
-                        muted
-                        className="w-full max-w-md rounded-lg border bg-black"
-                        style={{ aspectRatio: '16/9' }}
-                      />
+                       <video
+                         ref={videoPreview}
+                         autoPlay
+                         muted
+                         playsInline
+                         className="w-full max-w-md rounded-lg border bg-black"
+                         style={{ aspectRatio: '16/9' }}
+                       />
                     </div>
                   )}
                   

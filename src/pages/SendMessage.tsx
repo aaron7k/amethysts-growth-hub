@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { MessageSquare, Send, Image, Video, Mic, AtSign } from 'lucide-react';
+import { MessageSquare, Send, Image, Video, Mic, AtSign, Square, Play } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export default function SendMessage() {
@@ -24,6 +24,34 @@ export default function SendMessage() {
   const [mentionAll, setMentionAll] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  
+  // Estados para grabación de audio
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const mediaRecorder = useRef<MediaRecorder | null>(null);
+  const recordingInterval = useRef<NodeJS.Timeout | null>(null);
+
+  // Limpiar grabación al cambiar tipo de mensaje o desmontar
+  useEffect(() => {
+    return () => {
+      if (recordingInterval.current) {
+        clearInterval(recordingInterval.current);
+      }
+      if (mediaRecorder.current && isRecording) {
+        mediaRecorder.current.stop();
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (messageType !== 'audio') {
+      setAudioBlob(null);
+      if (isRecording) {
+        stopRecording();
+      }
+    }
+  }, [messageType]);
 
   // Verificar si el usuario es super_admin
   if (isLoading) {
@@ -58,7 +86,70 @@ export default function SendMessage() {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       setFile(selectedFile);
+      setAudioBlob(null); // Limpiar audio grabado si se selecciona archivo
     }
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      mediaRecorder.current = recorder;
+      
+      const chunks: BlobPart[] = [];
+      
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunks.push(e.data);
+        }
+      };
+      
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'audio/webm' });
+        setAudioBlob(blob);
+        
+        // Crear archivo simulado para mostrar en la UI
+        const audioFile = new File([blob], `grabacion_${Date.now()}.webm`, { type: 'audio/webm' });
+        setFile(audioFile);
+        
+        // Detener el stream
+        stream.getTracks().forEach(track => track.stop());
+      };
+      
+      recorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+      
+      // Iniciar contador de tiempo
+      recordingInterval.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+      
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo acceder al micrófono. Verifica los permisos.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorder.current && isRecording) {
+      mediaRecorder.current.stop();
+      setIsRecording(false);
+      
+      if (recordingInterval.current) {
+        clearInterval(recordingInterval.current);
+        recordingInterval.current = null;
+      }
+    }
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const handleConfirmSend = () => {
@@ -190,20 +281,70 @@ export default function SendMessage() {
                 {messageType === 'video' && 'Video'}
                 {messageType === 'audio' && 'Audio'}
               </Label>
-              <Input
-                type="file"
-                onChange={handleFileChange}
-                accept={
-                  messageType === 'image' ? 'image/*' :
-                  messageType === 'video' ? 'video/*' :
-                  messageType === 'audio' ? 'audio/*' : '*'
-                }
-              />
-              {file && (
-                <Badge variant="outline" className="flex items-center gap-2 w-fit">
-                  {getMessageTypeIcon(messageType)}
-                  {file.name}
-                </Badge>
+              
+              {messageType === 'audio' ? (
+                /* Controles de grabación de audio */
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    {!isRecording && !file && (
+                      <Button onClick={startRecording} variant="outline" className="flex items-center gap-2">
+                        <Mic className="h-4 w-4" />
+                        Grabar Audio
+                      </Button>
+                    )}
+                    
+                    {isRecording && (
+                      <div className="flex items-center gap-4">
+                        <Button onClick={stopRecording} variant="destructive" className="flex items-center gap-2">
+                          <Square className="h-4 w-4" />
+                          Detener
+                        </Button>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                          <span className="text-sm font-mono">{formatTime(recordingTime)}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Input de archivo alternativo */}
+                  <div className="text-center text-sm text-muted-foreground">
+                    <span>o</span>
+                  </div>
+                  
+                  <Input
+                    type="file"
+                    onChange={handleFileChange}
+                    accept="audio/*"
+                    className="cursor-pointer"
+                  />
+                  
+                  {file && (
+                    <Badge variant="outline" className="flex items-center gap-2 w-fit">
+                      <Mic className="h-4 w-4" />
+                      {file.name}
+                      {audioBlob && <span className="text-xs">(Grabado)</span>}
+                    </Badge>
+                  )}
+                </div>
+              ) : (
+                /* Input normal para imagen y video */
+                <>
+                  <Input
+                    type="file"
+                    onChange={handleFileChange}
+                    accept={
+                      messageType === 'image' ? 'image/*' :
+                      messageType === 'video' ? 'video/*' : '*'
+                    }
+                  />
+                  {file && (
+                    <Badge variant="outline" className="flex items-center gap-2 w-fit">
+                      {getMessageTypeIcon(messageType)}
+                      {file.name}
+                    </Badge>
+                  )}
+                </>
               )}
             </div>
           )}

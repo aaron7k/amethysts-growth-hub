@@ -548,6 +548,7 @@ export type Database = {
           is_approved: boolean | null
           phone: string | null
           role: Database["public"]["Enums"]["user_role"] | null
+          super_admin: boolean
           updated_at: string | null
         }
         Insert: {
@@ -560,6 +561,7 @@ export type Database = {
           is_approved?: boolean | null
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
+          super_admin?: boolean
           updated_at?: string | null
         }
         Update: {
@@ -572,6 +574,7 @@ export type Database = {
           is_approved?: boolean | null
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
+          super_admin?: boolean
           updated_at?: string | null
         }
         Relationships: []

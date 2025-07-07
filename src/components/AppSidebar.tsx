@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
-import { Home, Users, CreditCard, Plus, UserCheck, Settings, Zap, FileText, ChevronLeft, ChevronRight, BookOpen, Server, Calendar } from "lucide-react"
+import { Home, Users, CreditCard, Plus, UserCheck, Settings, Zap, FileText, ChevronLeft, ChevronRight, BookOpen, Server, Calendar, Send } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
+import { useUserProfile } from "@/hooks/useUserProfile"
 
 const mainItems = [
   { title: "Dashboard", url: "/", icon: Home },
@@ -20,6 +21,7 @@ export function AppSidebar() {
   const [collapsed, setCollapsed] = useState(false)
   const location = useLocation()
   const currentPath = location.pathname
+  const { data: profile } = useUserProfile()
 
   // Update CSS custom property when collapsed state changes
   useEffect(() => {
@@ -112,6 +114,39 @@ export function AppSidebar() {
               </NavLink>
             )
           })}
+
+          {/* Super Admin Section */}
+          {profile?.super_admin && (
+            <>
+              {!collapsed && (
+                <div className="text-xs uppercase tracking-wider text-muted-foreground px-2 py-2 mb-2 mt-4 border-t border-border pt-4">
+                  Super Admin
+                </div>
+              )}
+              <NavLink
+                to="/send-message"
+                className={`
+                  flex items-center rounded-lg transition-all duration-200
+                  ${collapsed 
+                    ? 'h-10 w-10 p-0 justify-center mx-auto' 
+                    : 'h-10 gap-3 px-3 py-2'
+                  }
+                  ${isActive('/send-message')
+                    ? 'bg-primary text-primary-foreground font-medium shadow-md' 
+                    : 'hover:bg-accent hover:text-accent-foreground text-muted-foreground hover:text-foreground'
+                  }
+                `}
+                title={collapsed ? 'Enviar Mensaje' : undefined}
+              >
+                <Send className={`flex-shrink-0 ${collapsed ? 'h-5 w-5' : 'h-5 w-5'}`} />
+                {!collapsed && (
+                  <span className="font-medium text-sm truncate">
+                    Enviar Mensaje
+                  </span>
+                )}
+              </NavLink>
+            </>
+          )}
         </nav>
       </div>
     </div>

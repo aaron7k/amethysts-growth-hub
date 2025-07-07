@@ -397,7 +397,7 @@ export default function SendMessage() {
               
               {messageType === 'audio' ? (
                 /* Controles de grabación de audio */
-                <div className="space-y-4">
+                <div className="space-y-4 flex flex-col items-center">
                   <div className="flex items-center gap-2">
                     {!isRecording && !file && (
                       <Button onClick={startRecording} variant="outline" className="flex items-center gap-2">
@@ -429,7 +429,7 @@ export default function SendMessage() {
                     type="file"
                     onChange={handleFileChange}
                     accept="audio/*"
-                    className="cursor-pointer"
+                    className="cursor-pointer max-w-md"
                   />
                   
                    {file && (
@@ -465,7 +465,7 @@ export default function SendMessage() {
                 </div>
               ) : messageType === 'video' ? (
                 /* Controles de grabación de video */
-                <div className="space-y-4">
+                <div className="space-y-4 flex flex-col items-center">
                   {/* Preview de video siempre visible para video */}
                   <div className="relative">
                     <video
@@ -514,7 +514,7 @@ export default function SendMessage() {
                     type="file"
                     onChange={handleFileChange}
                     accept="video/*"
-                    className="cursor-pointer"
+                    className="cursor-pointer max-w-md"
                   />
                   
                    {file && (

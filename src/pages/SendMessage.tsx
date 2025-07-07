@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { MessageSquare, Send, Image, Video, Mic, AtSign } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -22,6 +23,7 @@ export default function SendMessage() {
   const [file, setFile] = useState<File | null>(null);
   const [mentionAll, setMentionAll] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   // Verificar si el usuario es super_admin
   if (isLoading) {
@@ -59,7 +61,7 @@ export default function SendMessage() {
     }
   };
 
-  const handleSendMessage = async () => {
+  const handleConfirmSend = () => {
     if (!message.trim() && !file) {
       toast({
         title: "Error",
@@ -68,7 +70,11 @@ export default function SendMessage() {
       });
       return;
     }
+    setShowConfirmModal(true);
+  };
 
+  const handleSendMessage = async () => {
+    setShowConfirmModal(false);
     setIsSending(true);
     
     try {
@@ -228,11 +234,32 @@ export default function SendMessage() {
             </Label>
           </div>
 
-          {/* Vista previa */}
-          <div className="border rounded-lg p-4 bg-muted/50">
-            <div className="flex items-center gap-2 mb-2">
+          {/* Botón enviar */}
+          <Button 
+            onClick={handleConfirmSend} 
+            disabled={isSending || (!message && !file)}
+            className="w-full"
+          >
+            <Send className="h-4 w-4 mr-2" />
+            Enviar Mensaje
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Modal de confirmación */}
+      <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar Envío</DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro que deseas enviar este mensaje?
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
               <Badge variant="outline">
-                Vista Previa - {platform === 'whatsapp' ? 'WhatsApp' : 'Discord'}
+                {platform === 'whatsapp' ? 'WhatsApp' : 'Discord'}
               </Badge>
               {mentionAll && (
                 <Badge variant="secondary" className="flex items-center gap-1">
@@ -241,6 +268,7 @@ export default function SendMessage() {
                 </Badge>
               )}
             </div>
+            
             <div className="space-y-2">
               {file && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -249,36 +277,33 @@ export default function SendMessage() {
                 </div>
               )}
               {message && (
-                <p className="text-sm">{message}</p>
-              )}
-              {!message && !file && (
-                <p className="text-sm text-muted-foreground italic">
-                  Tu mensaje aparecerá aquí...
-                </p>
+                <div className="border rounded-lg p-3 bg-muted/50">
+                  <p className="text-sm">{message}</p>
+                </div>
               )}
             </div>
           </div>
 
-          {/* Botón enviar */}
-          <Button 
-            onClick={handleSendMessage} 
-            disabled={isSending || (!message && !file)}
-            className="w-full"
-          >
-            {isSending ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Enviando...
-              </>
-            ) : (
-              <>
-                <Send className="h-4 w-4 mr-2" />
-                Enviar Mensaje
-              </>
-            )}
-          </Button>
-        </CardContent>
-      </Card>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowConfirmModal(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSendMessage} disabled={isSending}>
+              {isSending ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Enviando...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4 mr-2" />
+                  Confirmar Envío
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

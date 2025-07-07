@@ -169,10 +169,51 @@ export default function SendMessage() {
     setIsSending(true);
     
     try {
-      // Aquí implementarías la lógica para enviar el mensaje
-      // Por ahora simulamos el envío
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      // Preparar el payload para el webhook
+      const payload: any = {
+        platform: platform,
+        messageType: messageType,
+        message: message,
+        mentionAll: mentionAll,
+        timestamp: new Date().toISOString(),
+        sender: profile?.full_name || profile?.email || 'Usuario'
+      };
+
+      // Si hay un archivo, convertirlo a base64
+      if (file) {
+        const reader = new FileReader();
+        const fileBase64 = await new Promise<string>((resolve, reject) => {
+          reader.onload = () => {
+            const result = reader.result as string;
+            resolve(result.split(',')[1]); // Remover el prefijo data:type;base64,
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        payload.file = {
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          data: fileBase64
+        };
+      }
+
+      // Enviar al webhook
+      const response = await fetch('https://hooks.infragrowthai.com/webhook/ccf008dd-1b80-4e37-9403-31cde4636648', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error del servidor: ${response.status} ${response.statusText}`);
+      }
+
+      const result = await response.json().catch(() => ({})); // En caso de que no sea JSON válido
+
       toast({
         title: "Mensaje enviado",
         description: `Mensaje enviado correctamente a ${platform === 'whatsapp' ? 'WhatsApp' : 'Discord'}`,
@@ -181,12 +222,14 @@ export default function SendMessage() {
       // Limpiar formulario
       setMessage('');
       setFile(null);
+      setAudioBlob(null);
       setMentionAll(false);
       
     } catch (error) {
+      console.error('Error enviando mensaje:', error);
       toast({
         title: "Error",
-        description: "No se pudo enviar el mensaje. Inténtalo de nuevo.",
+        description: error instanceof Error ? error.message : "No se pudo enviar el mensaje. Inténtalo de nuevo.",
         variant: "destructive"
       });
     } finally {

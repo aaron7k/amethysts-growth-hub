@@ -100,14 +100,18 @@ export default function SendMessage() {
         ? { audio: true, video: true }
         : { audio: true };
       
+      console.log('Iniciando grabación con constraints:', constraints);
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       mediaStream.current = stream;
+      console.log('Stream obtenido:', stream);
       
       // Mostrar preview para video
       if (messageType === 'video' && videoPreview.current) {
+        console.log('Asignando stream al video preview');
         videoPreview.current.srcObject = stream;
         // Asegurar que el video se reproduce
         videoPreview.current.play().catch(console.error);
+        console.log('Video preview configurado');
       }
       
       // Usar el mejor formato disponible
@@ -171,6 +175,7 @@ export default function SendMessage() {
       }, 1000);
       
     } catch (error) {
+      console.error('Error al iniciar grabación:', error);
       toast({
         title: "Error",
         description: `No se pudo acceder a ${messageType === 'video' ? 'la cámara/micrófono' : 'el micrófono'}. Verifica los permisos.`,

@@ -88,7 +88,7 @@ export default function Attendance() {
     
     // Sort events within each week by date (closest/most recent first)
     Object.keys(grouped).forEach(weekKey => {
-      grouped[weekKey].sort((a, b) => 
+      grouped[weekKey].sort((b, a) => 
         new Date(b.event_date).getTime() - new Date(a.event_date).getTime()
       )
     })

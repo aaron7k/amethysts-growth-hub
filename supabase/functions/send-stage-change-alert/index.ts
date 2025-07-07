@@ -79,6 +79,37 @@ serve(async (req) => {
       throw new Error(`n8n webhook failed with status: ${webhookResponse.status}`)
     }
 
+    // Si es una activación de etapa (stage_change), enviar también al webhook de activación
+    if (alert.alert_type === 'stage_change') {
+      const activatePhaseWebhook = 'https://hooks.infragrowthai.com/webhook/activate-phase'
+      
+      const activatePayload = {
+        alert_id: alert.id,
+        client_id: alert.client_id,
+        subscription_id: alert.subscription_id,
+        stage_number: alert.metadata?.stage_number,
+        stage_name: alert.metadata?.stage_name,
+        start_date: alert.metadata?.start_date,
+        end_date: alert.metadata?.end_date,
+        program_day: alert.metadata?.program_day,
+        discord_channel: '#aceleradora', // Canal de Discord por defecto
+        timestamp: alert.created_at
+      }
+
+      const activateResponse = await fetch(activatePhaseWebhook, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(activatePayload)
+      })
+
+      if (!activateResponse.ok) {
+        console.error(`Activate phase webhook failed with status: ${activateResponse.status}`)
+        // No lanzamos error para que no falle la función principal
+      } else {
+        console.log(`Phase activation sent to Discord webhook for stage ${alert.metadata?.stage_number}`)
+      }
+    }
+
     // Actualizar el estado de la alerta
     const { error: updateError } = await supabaseClient
       .from('alerts')

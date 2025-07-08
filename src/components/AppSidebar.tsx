@@ -10,7 +10,7 @@ const mainItems = [
   { title: "Servicios", url: "/services", icon: Server },
   { title: "Pagos", url: "/payments", icon: CreditCard },
   { title: "Productos", url: "/plans", icon: Settings },
-  { title: "Nueva Venta", url: "/new-sale", icon: Plus },
+  { title: "Registrar nuevo pago", url: "/new-sale", icon: Plus },
   { title: "Onboarding", url: "/onboarding", icon: UserCheck },
   { title: "Aceleradora", url: "/accelerator", icon: Zap },
   { title: "Asistencias", url: "/attendance", icon: Calendar },

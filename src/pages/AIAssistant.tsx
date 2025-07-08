@@ -25,7 +25,16 @@ export default function AIAssistant() {
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Verificar si es super admin
+  // Auto-scroll cuando se añadan nuevos mensajes
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // Verificar si es super admin DESPUÉS de todos los hooks
   if (!profile?.super_admin) {
     return (
       <div className="container mx-auto p-6">
@@ -40,15 +49,6 @@ export default function AIAssistant() {
       </div>
     );
   }
-
-  // Auto-scroll cuando se añadan nuevos mensajes
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
 
   const sendMessage = async (content: string, messageType: 'text' | 'audio' = 'text') => {
     if (!content.trim() || !user) return;

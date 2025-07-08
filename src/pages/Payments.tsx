@@ -67,8 +67,10 @@ export default function Payments() {
         .from('subscriptions')
         .select(`
           id,
+          start_date,
+          total_cost_usd,
           clients(full_name, email),
-          plans(name)
+          plans(name, duration_days, price_usd)
         `)
         .eq('status', 'active')
         .order('created_at', { ascending: false })
@@ -88,7 +90,7 @@ export default function Payments() {
           subscriptions(
             *,
             clients(full_name, email),
-            plans(name, plan_type)
+            plans(name, plan_type, price_usd)
           )
         `)
         .order('due_date', { ascending: true })
@@ -341,6 +343,24 @@ export default function Payments() {
     }
   }
 
+  // Calculate due date based on subscription start date and plan duration
+  const calculateDueDate = (subscriptionId: string, installmentNumber: number) => {
+    if (!subscriptions) return ""
+    
+    const subscription = subscriptions.find(sub => sub.id === subscriptionId)
+    if (!subscription) return ""
+    
+    const startDate = new Date(subscription.start_date)
+    const durationDays = subscription.plans?.duration_days || 30
+    
+    // Calculate due date: start date + (installment number * 30 days) - assumes monthly installments
+    const daysToAdd = (installmentNumber - 1) * 30 // Assuming monthly payments
+    const dueDate = new Date(startDate)
+    dueDate.setDate(dueDate.getDate() + daysToAdd)
+    
+    return dueDate.toISOString().split('T')[0]
+  }
+
   const getStatusColor = (status: string) => {
     const colors = {
       'paid': 'bg-green-100 text-green-800',
@@ -532,6 +552,7 @@ export default function Payments() {
                       <TableRow>
                         <TableHead className="min-w-[150px]">Cliente</TableHead>
                         <TableHead className="min-w-[120px] hidden sm:table-cell">Producto</TableHead>
+                        <TableHead className="min-w-[100px] hidden lg:table-cell">Total Producto</TableHead>
                         <TableHead className="min-w-[80px]">Cuota</TableHead>
                         <TableHead className="min-w-[100px]">Monto</TableHead>
                         <TableHead className="min-w-[110px] hidden md:table-cell">Vencimiento</TableHead>
@@ -543,7 +564,7 @@ export default function Payments() {
                     <TableBody>
                       {installments?.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                             No se encontraron cuotas
                           </TableCell>
                         </TableRow>
@@ -568,6 +589,14 @@ export default function Payments() {
                                 <div className="text-xs text-muted-foreground">
                                   {installment.subscriptions?.plans?.plan_type}
                                 </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="hidden lg:table-cell">
+                              <div className="font-semibold text-sm text-blue-600">
+                                ${installment.subscriptions?.plans?.price_usd?.toLocaleString() || 'N/A'}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                Precio total
                               </div>
                             </TableCell>
                             <TableCell className="text-sm">
@@ -789,7 +818,15 @@ export default function Payments() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Suscripción</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={(value) => {
+                      field.onChange(value)
+                      // Auto-calculate due date when subscription changes
+                      const installmentNumber = parseInt(form.getValues('installment_number')) || 1
+                      const dueDate = calculateDueDate(value, installmentNumber)
+                      if (dueDate) {
+                        form.setValue('due_date', dueDate)
+                      }
+                    }} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecciona una suscripción" />
@@ -798,7 +835,12 @@ export default function Payments() {
                       <SelectContent>
                         {subscriptions?.map((subscription) => (
                           <SelectItem key={subscription.id} value={subscription.id}>
-                            {subscription.clients?.full_name} - {subscription.plans?.name}
+                            <div className="flex flex-col">
+                              <span>{subscription.clients?.full_name} - {subscription.plans?.name}</span>
+                              <span className="text-xs text-muted-foreground">
+                                Total: ${subscription.total_cost_usd?.toLocaleString()}
+                              </span>
+                            </div>
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -815,7 +857,17 @@ export default function Payments() {
                     <FormItem>
                       <FormLabel>Número de Cuota</FormLabel>
                       <FormControl>
-                        <Input {...field} type="number" />
+                        <Input {...field} type="number" onChange={(e) => {
+                          field.onChange(e)
+                          // Auto-calculate due date when installment number changes
+                          const subscriptionId = form.getValues('subscription_id')
+                          if (subscriptionId) {
+                            const dueDate = calculateDueDate(subscriptionId, parseInt(e.target.value) || 1)
+                            if (dueDate) {
+                              form.setValue('due_date', dueDate)
+                            }
+                          }
+                        }} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -844,6 +896,9 @@ export default function Payments() {
                     <FormControl>
                       <Input {...field} type="date" />
                     </FormControl>
+                    <div className="text-xs text-muted-foreground">
+                      Se calcula automáticamente según la duración del producto
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}

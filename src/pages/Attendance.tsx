@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Calendar, Users, UserCheck, UserX, Plus, CheckCircle, Edit, Trash2, CalendarDays } from "lucide-react"
+import { Calendar, Users, UserCheck, UserX, Plus, CheckCircle, Edit, Trash2, CalendarDays, Search } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { format, startOfWeek, endOfWeek, startOfDay, endOfDay, parseISO } from "date-fns"
 import { es } from "date-fns/locale"
@@ -35,6 +35,7 @@ export default function Attendance() {
     description: ''
   })
   const [attendanceEmail, setAttendanceEmail] = useState('')
+  const [emailFilter, setEmailFilter] = useState('')
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
@@ -255,13 +256,24 @@ export default function Attendance() {
           </p>
         </div>
         
-        <Button 
-          variant={showAllWeeks ? "default" : "outline"}
-          onClick={() => setShowAllWeeks(!showAllWeeks)}
-        >
-          <CalendarDays className="mr-2 h-4 w-4" />
-          {showAllWeeks ? "Ver Semana Actual" : "Ver Todas las Semanas"}
-        </Button>
+        <div className="flex items-center gap-4">
+          <div className="relative w-64">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Filtrar por correo..."
+              value={emailFilter}
+              onChange={(e) => setEmailFilter(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Button 
+            variant={showAllWeeks ? "default" : "outline"}
+            onClick={() => setShowAllWeeks(!showAllWeeks)}
+          >
+            <CalendarDays className="mr-2 h-4 w-4" />
+            {showAllWeeks ? "Ver Semana Actual" : "Ver Todas las Semanas"}
+          </Button>
+        </div>
       </div>
 
       {events?.length === 0 ? (
@@ -353,38 +365,43 @@ export default function Attendance() {
                           </div>
                         </div>
 
-                        <div className="space-y-4">
-                          <h4 className="font-medium">Lista de Asistencia</h4>
-                          <div className="space-y-2 max-h-60 overflow-y-auto">
-                            {event.invited_emails.map((email) => {
-                              const hasAttended = event.attended_emails.includes(email)
-                              return (
-                                <div key={email} className="flex items-center justify-between p-2 border rounded">
-                                  <span className="text-sm">{email}</span>
-                                  <div className="flex items-center gap-2">
-                                    {hasAttended ? (
-                                      <Badge className="bg-green-100 text-green-800">
-                                        <CheckCircle className="h-3 w-3 mr-1" />
-                                        Asistió
-                                      </Badge>
-                                    ) : (
-                                      <Badge variant="outline" className="text-red-600">
-                                        No asistió
-                                      </Badge>
-                                    )}
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => markAttendance(event.id, email, !hasAttended)}
-                                    >
-                                      {hasAttended ? 'Marcar ausente' : 'Marcar presente'}
-                                    </Button>
-                                  </div>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        </div>
+                         <div className="space-y-4">
+                           <h4 className="font-medium">Lista de Asistencia</h4>
+                           <div className="space-y-2 max-h-60 overflow-y-auto">
+                             {event.invited_emails
+                               .filter(email => 
+                                 emailFilter === '' || 
+                                 email.toLowerCase().includes(emailFilter.toLowerCase())
+                               )
+                               .map((email) => {
+                               const hasAttended = event.attended_emails.includes(email)
+                               return (
+                                 <div key={email} className="flex items-center justify-between p-2 border rounded">
+                                   <span className="text-sm">{email}</span>
+                                   <div className="flex items-center gap-2">
+                                     {hasAttended ? (
+                                       <Badge className="bg-green-100 text-green-800">
+                                         <CheckCircle className="h-3 w-3 mr-1" />
+                                         Asistió
+                                       </Badge>
+                                     ) : (
+                                       <Badge variant="outline" className="text-red-600">
+                                         No asistió
+                                       </Badge>
+                                     )}
+                                     <Button
+                                       variant="outline"
+                                       size="sm"
+                                       onClick={() => markAttendance(event.id, email, !hasAttended)}
+                                     >
+                                       {hasAttended ? 'Marcar ausente' : 'Marcar presente'}
+                                     </Button>
+                                   </div>
+                                 </div>
+                               )
+                             })}
+                           </div>
+                         </div>
                       </CardContent>
                     </Card>
                   ))}
@@ -464,38 +481,43 @@ export default function Attendance() {
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <h4 className="font-medium">Lista de Asistencia</h4>
-                  <div className="space-y-2 max-h-60 overflow-y-auto">
-                    {event.invited_emails.map((email) => {
-                      const hasAttended = event.attended_emails.includes(email)
-                      return (
-                        <div key={email} className="flex items-center justify-between p-2 border rounded">
-                          <span className="text-sm">{email}</span>
-                          <div className="flex items-center gap-2">
-                            {hasAttended ? (
-                              <Badge className="bg-green-100 text-green-800">
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                Asistió
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-red-600">
-                                No asistió
-                              </Badge>
-                            )}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => markAttendance(event.id, email, !hasAttended)}
-                            >
-                              {hasAttended ? 'Marcar ausente' : 'Marcar presente'}
-                            </Button>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
+                 <div className="space-y-4">
+                   <h4 className="font-medium">Lista de Asistencia</h4>
+                   <div className="space-y-2 max-h-60 overflow-y-auto">
+                     {event.invited_emails
+                       .filter(email => 
+                         emailFilter === '' || 
+                         email.toLowerCase().includes(emailFilter.toLowerCase())
+                       )
+                       .map((email) => {
+                       const hasAttended = event.attended_emails.includes(email)
+                       return (
+                         <div key={email} className="flex items-center justify-between p-2 border rounded">
+                           <span className="text-sm">{email}</span>
+                           <div className="flex items-center gap-2">
+                             {hasAttended ? (
+                               <Badge className="bg-green-100 text-green-800">
+                                 <CheckCircle className="h-3 w-3 mr-1" />
+                                 Asistió
+                               </Badge>
+                             ) : (
+                               <Badge variant="outline" className="text-red-600">
+                                 No asistió
+                               </Badge>
+                             )}
+                             <Button
+                               variant="outline"
+                               size="sm"
+                               onClick={() => markAttendance(event.id, email, !hasAttended)}
+                             >
+                               {hasAttended ? 'Marcar ausente' : 'Marcar presente'}
+                             </Button>
+                           </div>
+                         </div>
+                       )
+                     })}
+                   </div>
+                 </div>
               </CardContent>
             </Card>
           ))}

@@ -20,8 +20,12 @@ interface UserProfile {
   id: string
   full_name: string | null
   email: string
-  phone_number: string | null
-  created_at: string
+  phone: string | null
+  role: string | null
+  super_admin: boolean
+  is_approved: boolean | null
+  is_active: boolean | null
+  created_at: string | null
 }
 
 export function UserProfileModal({ open, onOpenChange }: UserProfileModalProps) {
@@ -30,7 +34,7 @@ export function UserProfileModal({ open, onOpenChange }: UserProfileModalProps) 
   const queryClient = useQueryClient()
   const [formData, setFormData] = useState({
     full_name: '',
-    phone_number: ''
+    phone: ''
   })
 
   const { data: profile, isLoading } = useQuery({
@@ -39,7 +43,7 @@ export function UserProfileModal({ open, onOpenChange }: UserProfileModalProps) 
       if (!user?.id) return null
       
       const { data, error } = await supabase
-        .from('clients')
+        .from('user_profiles')
         .select('*')
         .eq('id', user.id)
         .single()
@@ -54,17 +58,16 @@ export function UserProfileModal({ open, onOpenChange }: UserProfileModalProps) 
   })
 
   const updateProfileMutation = useMutation({
-    mutationFn: async (data: { full_name: string; phone_number: string }) => {
+    mutationFn: async (data: { full_name: string; phone: string }) => {
       if (!user?.id) throw new Error('No user ID')
 
       const { error } = await supabase
-        .from('clients')
-        .upsert({
-          id: user.id,
+        .from('user_profiles')
+        .update({
           full_name: data.full_name,
-          email: user.email || '',
-          phone_number: data.phone_number,
+          phone: data.phone,
         })
+        .eq('id', user.id)
 
       if (error) throw error
     },
@@ -90,12 +93,12 @@ export function UserProfileModal({ open, onOpenChange }: UserProfileModalProps) 
     if (profile) {
       setFormData({
         full_name: profile.full_name || '',
-        phone_number: profile.phone_number || ''
+        phone: profile.phone || ''
       })
     } else if (user) {
       setFormData({
         full_name: user.user_metadata?.full_name || '',
-        phone_number: ''
+        phone: ''
       })
     }
   }, [profile, user])
@@ -149,11 +152,11 @@ export function UserProfileModal({ open, onOpenChange }: UserProfileModalProps) 
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="phone_number">Teléfono</Label>
+              <Label htmlFor="phone">Teléfono</Label>
               <Input
-                id="phone_number"
-                value={formData.phone_number}
-                onChange={(e) => setFormData(prev => ({ ...prev, phone_number: e.target.value }))}
+                id="phone"
+                value={formData.phone}
+                onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
                 placeholder="Ingresa tu número de teléfono"
                 disabled={isLoading || updateProfileMutation.isPending}
               />

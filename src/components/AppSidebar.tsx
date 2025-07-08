@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { Home, Users, CreditCard, Plus, UserCheck, Settings, Zap, FileText, ChevronLeft, ChevronRight, BookOpen, Server, Calendar, Send } from "lucide-react"
+import { Home, Users, CreditCard, Plus, UserCheck, Settings, Zap, FileText, ChevronLeft, ChevronRight, BookOpen, Server, Calendar, Send, Bot } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import { useUserProfile } from "@/hooks/useUserProfile"
 
@@ -142,6 +142,28 @@ export function AppSidebar() {
                 {!collapsed && (
                   <span className="font-medium text-sm truncate">
                     Enviar Mensaje
+                  </span>
+                )}
+              </NavLink>
+              <NavLink
+                to="/ai-assistant"
+                className={`
+                  flex items-center rounded-lg transition-all duration-200
+                  ${collapsed 
+                    ? 'h-10 w-10 p-0 justify-center mx-auto' 
+                    : 'h-10 gap-3 px-3 py-2'
+                  }
+                  ${isActive('/ai-assistant')
+                    ? 'bg-primary text-primary-foreground font-medium shadow-md' 
+                    : 'hover:bg-accent hover:text-accent-foreground text-muted-foreground hover:text-foreground'
+                  }
+                `}
+                title={collapsed ? 'Asistente IA' : undefined}
+              >
+                <Bot className={`flex-shrink-0 ${collapsed ? 'h-5 w-5' : 'h-5 w-5'}`} />
+                {!collapsed && (
+                  <span className="font-medium text-sm truncate">
+                    Asistente IA
                   </span>
                 )}
               </NavLink>

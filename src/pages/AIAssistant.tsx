@@ -1,0 +1,297 @@
+import { useState, useRef } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "@/hooks/use-toast";
+import { Send, Mic, MicOff, Bot, User, Loader2 } from "lucide-react";
+
+interface Message {
+  id: string;
+  type: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+  messageType: 'text' | 'audio';
+}
+
+export default function AIAssistant() {
+  const { data: profile } = useUserProfile();
+  const { user } = useAuth();
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Verificar si es super admin
+  if (!profile?.super_admin) {
+    return (
+      <div className="container mx-auto p-6">
+        <Card>
+          <CardContent className="p-6 text-center">
+            <h2 className="text-xl font-semibold text-destructive mb-2">Acceso Denegado</h2>
+            <p className="text-muted-foreground">
+              Esta funcionalidad solo está disponible para Super Administradores.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const sendMessage = async (content: string, messageType: 'text' | 'audio' = 'text') => {
+    if (!content.trim() || !user) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      type: 'user',
+      content,
+      timestamp: new Date(),
+      messageType
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('https://hooks.infragrowthai.com/webhook/infragrowth/sql-assistant', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sessionId: user.id,
+          messageType: messageType,
+          message: content
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al enviar mensaje al asistente');
+      }
+
+      const result = await response.json();
+      
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        type: 'assistant',
+        content: result.response || 'Respuesta del asistente recibida',
+        timestamp: new Date(),
+        messageType: 'text'
+      };
+
+      setMessages(prev => [...prev, assistantMessage]);
+      
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo enviar el mensaje. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+      setTimeout(scrollToBottom, 100);
+    }
+  };
+
+  const handleSendText = () => {
+    if (input.trim()) {
+      sendMessage(input, 'text');
+      setInput("");
+    }
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      const audioChunks: BlobPart[] = [];
+
+      recorder.ondataavailable = (event) => {
+        audioChunks.push(event.data);
+      };
+
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        const reader = new FileReader();
+        
+        reader.onloadend = () => {
+          const base64Audio = (reader.result as string).split(',')[1];
+          sendMessage(base64Audio, 'audio');
+        };
+        
+        reader.readAsDataURL(audioBlob);
+        
+        // Limpiar el stream
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      recorder.start();
+      setMediaRecorder(recorder);
+      setIsRecording(true);
+      
+    } catch (error) {
+      console.error('Error accessing microphone:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo acceder al micrófono.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      mediaRecorder.stop();
+      setMediaRecorder(null);
+      setIsRecording(false);
+    }
+  };
+
+  return (
+    <div className="container mx-auto p-6 max-w-4xl">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold">Asistente de IA - Base de Datos</h1>
+        <p className="text-muted-foreground mt-2">
+          Realiza consultas inteligentes a la base de datos usando texto o voz
+        </p>
+      </div>
+
+      <Card className="h-[600px] flex flex-col">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Bot className="h-5 w-5" />
+            Chat con Asistente IA
+          </CardTitle>
+        </CardHeader>
+        
+        <CardContent className="flex-1 flex flex-col p-6">
+          {/* Messages Area */}
+          <div className="flex-1 overflow-y-auto mb-4 space-y-4 pr-2">
+            {messages.length === 0 ? (
+              <div className="text-center text-muted-foreground py-8">
+                <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>¡Hola! Soy tu asistente de IA para consultas de base de datos.</p>
+                <p className="text-sm mt-2">Puedes escribir o hablar para hacer consultas.</p>
+              </div>
+            ) : (
+              messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div className={`flex gap-3 max-w-[80%] ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+                    <div className={`
+                      w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0
+                      ${message.type === 'user' ? 'bg-primary' : 'bg-secondary'}
+                    `}>
+                      {message.type === 'user' ? (
+                        <User className="h-4 w-4 text-primary-foreground" />
+                      ) : (
+                        <Bot className="h-4 w-4 text-secondary-foreground" />
+                      )}
+                    </div>
+                    <div className={`
+                      rounded-lg px-4 py-2 
+                      ${message.type === 'user' 
+                        ? 'bg-primary text-primary-foreground' 
+                        : 'bg-secondary text-secondary-foreground'
+                      }
+                    `}>
+                      {message.messageType === 'audio' && message.type === 'user' ? (
+                        <div className="flex items-center gap-2">
+                          <Mic className="h-4 w-4" />
+                          <span className="text-sm italic">Mensaje de audio enviado</span>
+                        </div>
+                      ) : (
+                        <p className="whitespace-pre-wrap">{message.content}</p>
+                      )}
+                      <div className="text-xs opacity-70 mt-1">
+                        {message.timestamp.toLocaleTimeString()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+            
+            {isLoading && (
+              <div className="flex gap-3 justify-start">
+                <div className="flex gap-3 max-w-[80%]">
+                  <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
+                    <Bot className="h-4 w-4 text-secondary-foreground" />
+                  </div>
+                  <div className="bg-secondary text-secondary-foreground rounded-lg px-4 py-2">
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Pensando...</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Input Area */}
+          <div className="border-t pt-4">
+            <div className="flex gap-2">
+              <Textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Escribe tu consulta aquí..."
+                className="resize-none"
+                rows={2}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendText();
+                  }
+                }}
+                disabled={isLoading}
+              />
+              <div className="flex flex-col gap-2">
+                <Button
+                  onClick={handleSendText}
+                  disabled={!input.trim() || isLoading}
+                  size="icon"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+                <Button
+                  onClick={isRecording ? stopRecording : startRecording}
+                  disabled={isLoading}
+                  variant={isRecording ? "destructive" : "outline"}
+                  size="icon"
+                >
+                  {isRecording ? (
+                    <MicOff className="h-4 w-4" />
+                  ) : (
+                    <Mic className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+            
+            {isRecording && (
+              <div className="text-center mt-2">
+                <div className="flex items-center justify-center gap-2 text-destructive">
+                  <div className="w-2 h-2 bg-destructive rounded-full animate-pulse"></div>
+                  <span className="text-sm">Grabando... Haz clic en el micrófono para detener</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

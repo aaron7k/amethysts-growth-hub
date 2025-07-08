@@ -26,6 +26,7 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Documentation from "./pages/Documentation";
 import SendMessage from "./pages/SendMessage";
+import AIAssistant from "./pages/AIAssistant";
 
 const queryClient = new QueryClient();
 
@@ -62,6 +63,7 @@ const App = () => (
                             <Route path="/attendance" element={<Attendance />} />
                             <Route path="/documentation" element={<Documentation />} />
                             <Route path="/send-message" element={<SendMessage />} />
+                            <Route path="/ai-assistant" element={<AIAssistant />} />
                             <Route path="*" element={<NotFound />} />
                           </Routes>
                         </main>

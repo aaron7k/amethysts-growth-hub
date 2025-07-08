@@ -8,9 +8,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
-import { CreditCard, Search, Filter, CheckCircle, DollarSign, Edit, Trash2, Plus } from "lucide-react"
+import { CreditCard, Search, Filter, CheckCircle, DollarSign, Edit, Trash2, Plus, Calendar, FileText } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -34,11 +35,13 @@ type PaymentFormData = z.infer<typeof paymentSchema>
 export default function Payments() {
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [searchTerm, setSearchTerm] = useState("")
+  const [monthFilter, setMonthFilter] = useState<string>("all")
   const [editingPayment, setEditingPayment] = useState<any>(null)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [paymentToDelete, setPaymentToDelete] = useState<any>(null)
+  const [activeTab, setActiveTab] = useState("payments")
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
@@ -107,6 +110,67 @@ export default function Payments() {
       }
 
       return filteredData
+    }
+  })
+
+  // Fetch tracking data for the seguimientos tab
+  const { data: trackingData, isLoading: isLoadingTracking } = useQuery({
+    queryKey: ['tracking-data', monthFilter],
+    queryFn: async () => {
+      let query = supabase
+        .from('subscriptions')
+        .select(`
+          id,
+          start_date,
+          end_date,
+          total_cost_usd,
+          clients(full_name, email),
+          plans(name, plan_type),
+          installments(
+            id,
+            installment_number,
+            amount_usd,
+            due_date,
+            payment_date,
+            status
+          )
+        `)
+        .eq('status', 'active')
+        .order('start_date', { ascending: false })
+
+      const { data, error } = await query
+      if (error) throw error
+
+      // Process data to create tracking information
+      const processedData = data?.map(subscription => {
+        const installments = subscription.installments || []
+        const paidAmount = installments
+          .filter(inst => inst.status === 'paid')
+          .reduce((sum, inst) => sum + Number(inst.amount_usd), 0)
+        
+        const remainingAmount = subscription.total_cost_usd - paidAmount
+        
+        return {
+          ...subscription,
+          paidAmount,
+          remainingAmount,
+          latestInstallment: installments.length > 0 ? installments[installments.length - 1] : null
+        }
+      }) || []
+
+      // Filter by current month if needed
+      if (monthFilter === 'current') {
+        const currentMonth = new Date().getMonth()
+        const currentYear = new Date().getFullYear()
+        
+        return processedData.filter(item => {
+          if (!item.latestInstallment?.due_date) return false
+          const dueDate = new Date(item.latestInstallment.due_date)
+          return dueDate.getMonth() === currentMonth && dueDate.getFullYear() === currentYear
+        })
+      }
+
+      return processedData
     }
   })
 
@@ -314,6 +378,15 @@ export default function Payments() {
     }, { pending: 0, paid: 0, overdue: 0, totalAmount: 0 })
   }
 
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "N/A"
+    return new Date(dateString).toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    })
+  }
+
   const totals = getTotalsByStatus()
 
   return (
@@ -329,224 +402,368 @@ export default function Payments() {
             Administra todas las cuotas y pagos del sistema
           </p>
         </div>
-        <Button onClick={handleCreatePayment} className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          Nuevo Pago
-        </Button>
+        {activeTab === "payments" && (
+          <Button onClick={handleCreatePayment} className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Nuevo Pago
+          </Button>
+        )}
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <Card className="border-l-4 border-l-yellow-500">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
-              Pagos Pendientes
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl sm:text-2xl font-bold text-foreground">
-              {totals.pending}
-            </div>
-          </CardContent>
-        </Card>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="payments" className="flex items-center gap-2">
+            <CreditCard className="h-4 w-4" />
+            Pagos
+          </TabsTrigger>
+          <TabsTrigger value="tracking" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Seguimientos
+          </TabsTrigger>
+        </TabsList>
 
-        <Card className="border-l-4 border-l-red-500">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
-              Pagos Atrasados
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl sm:text-2xl font-bold text-foreground">
-              {totals.overdue}
-            </div>
-          </CardContent>
-        </Card>
+        <TabsContent value="payments" className="space-y-4">
+          {/* Summary Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <Card className="border-l-4 border-l-yellow-500">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
+                  Pagos Pendientes
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl sm:text-2xl font-bold text-foreground">
+                  {totals.pending}
+                </div>
+              </CardContent>
+            </Card>
 
-        <Card className="border-l-4 border-l-green-500">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
-              Pagos Completados
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl sm:text-2xl font-bold text-foreground">
-              {totals.paid}
-            </div>
-          </CardContent>
-        </Card>
+            <Card className="border-l-4 border-l-red-500">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
+                  Pagos Atrasados
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl sm:text-2xl font-bold text-foreground">
+                  {totals.overdue}
+                </div>
+              </CardContent>
+            </Card>
 
-        <Card className="border-l-4 border-l-primary col-span-2 lg:col-span-1">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
-              Monto Pendiente
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl sm:text-2xl font-bold text-primary">
-              ${totals.totalAmount.toFixed(2)}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            <Card className="border-l-4 border-l-green-500">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
+                  Pagos Completados
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl sm:text-2xl font-bold text-foreground">
+                  {totals.paid}
+                </div>
+              </CardContent>
+            </Card>
 
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-            <Filter className="h-4 w-4 sm:h-5 sm:w-5" />
-            Filtros y Búsqueda
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Buscar por cliente..." 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filtrar por estado" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los estados</SelectItem>
-                <SelectItem value="pending">Pendientes</SelectItem>
-                <SelectItem value="paid">Pagados</SelectItem>
-                <SelectItem value="overdue">Atrasados</SelectItem>
-              </SelectContent>
-            </Select>
+            <Card className="border-l-4 border-l-primary col-span-2 lg:col-span-1">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
+                  Monto Pendiente
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl sm:text-2xl font-bold text-primary">
+                  ${totals.totalAmount.toFixed(2)}
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Payments Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg sm:text-xl">Lista de Cuotas</CardTitle>
-          <CardDescription>
-            {installments?.length || 0} cuota(s) encontrada(s)
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-0 sm:p-6">
-          {isLoading ? (
-            <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="min-w-[150px]">Cliente</TableHead>
-                    <TableHead className="min-w-[120px] hidden sm:table-cell">Plan</TableHead>
-                    <TableHead className="min-w-[80px]">Cuota</TableHead>
-                    <TableHead className="min-w-[100px]">Monto</TableHead>
-                    <TableHead className="min-w-[110px] hidden md:table-cell">Vencimiento</TableHead>
-                    <TableHead className="min-w-[100px]">Estado</TableHead>
-                    <TableHead className="min-w-[120px] hidden lg:table-cell">Método de Pago</TableHead>
-                    <TableHead className="min-w-[180px]">Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {installments?.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                        No se encontraron cuotas
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    installments?.map((installment) => (
-                      <TableRow key={installment.id} className="hover:bg-muted/50">
-                        <TableCell>
-                          <div>
-                            <div className="font-medium text-sm sm:text-base">
-                              {installment.subscriptions?.clients?.full_name}
-                            </div>
-                            <div className="text-xs sm:text-sm text-muted-foreground block sm:hidden lg:block">
-                              {installment.subscriptions?.clients?.email}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="hidden sm:table-cell">
-                          <div>
-                            <div className="font-medium text-sm">
-                              {installment.subscriptions?.plans?.name}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {installment.subscriptions?.plans?.plan_type}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          Cuota {installment.installment_number}
-                        </TableCell>
-                        <TableCell className="font-semibold text-primary text-sm sm:text-base">
-                          ${installment.amount_usd}
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell text-sm">
-                          {new Date(installment.due_date).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={`${getStatusColor(installment.status || '')} text-xs`}>
-                            {installment.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="hidden lg:table-cell text-sm">
-                          {installment.payment_method ? getPaymentMethodLabel(installment.payment_method) : '-'}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-1 sm:gap-2">
-                            {installment.status === 'pending' || installment.status === 'overdue' ? (
-                              <Button
-                                size="sm"
-                                onClick={() => markAsPaidMutation.mutate({
-                                  installmentId: installment.id,
-                                  paymentMethod: 'stripe' as PaymentMethod
-                                })}
-                                disabled={markAsPaidMutation.isPending}
-                                className="bg-green-600 hover:bg-green-700 text-xs sm:text-sm px-2 sm:px-4"
-                              >
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                <span className="hidden sm:inline">Marcar Pagado</span>
-                                <span className="sm:hidden">Pagado</span>
-                              </Button>
-                            ) : (
-                              <span className="text-muted-foreground text-xs sm:text-sm">
-                                <span className="hidden sm:inline">Pagado el </span>
-                                {installment.payment_date ? new Date(installment.payment_date).toLocaleDateString() : '-'}
-                              </span>
-                            )}
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleEditPayment(installment)}
-                            >
-                              <Edit className="h-3 w-3" />
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleDeletePayment(installment)}
-                              className="text-red-600 hover:text-red-700"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </TableCell>
+          {/* Filters */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <Filter className="h-4 w-4 sm:h-5 sm:w-5" />
+                Filtros y Búsqueda
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    placeholder="Buscar por cliente..." 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Filtrar por estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los estados</SelectItem>
+                    <SelectItem value="pending">Pendientes</SelectItem>
+                    <SelectItem value="paid">Pagados</SelectItem>
+                    <SelectItem value="overdue">Atrasados</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Payments Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg sm:text-xl">Lista de Cuotas</CardTitle>
+              <CardDescription>
+                {installments?.length || 0} cuota(s) encontrada(s)
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0 sm:p-6">
+              {isLoading ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="min-w-[150px]">Cliente</TableHead>
+                        <TableHead className="min-w-[120px] hidden sm:table-cell">Producto</TableHead>
+                        <TableHead className="min-w-[80px]">Cuota</TableHead>
+                        <TableHead className="min-w-[100px]">Monto</TableHead>
+                        <TableHead className="min-w-[110px] hidden md:table-cell">Vencimiento</TableHead>
+                        <TableHead className="min-w-[100px]">Estado</TableHead>
+                        <TableHead className="min-w-[120px] hidden lg:table-cell">Método de Pago</TableHead>
+                        <TableHead className="min-w-[180px]">Acciones</TableHead>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                    </TableHeader>
+                    <TableBody>
+                      {installments?.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                            No se encontraron cuotas
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        installments?.map((installment) => (
+                          <TableRow key={installment.id} className="hover:bg-muted/50">
+                            <TableCell>
+                              <div>
+                                <div className="font-medium text-sm sm:text-base">
+                                  {installment.subscriptions?.clients?.full_name}
+                                </div>
+                                <div className="text-xs sm:text-sm text-muted-foreground block sm:hidden lg:block">
+                                  {installment.subscriptions?.clients?.email}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="hidden sm:table-cell">
+                              <div>
+                                <div className="font-medium text-sm">
+                                  {installment.subscriptions?.plans?.name}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {installment.subscriptions?.plans?.plan_type}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              Cuota {installment.installment_number}
+                            </TableCell>
+                            <TableCell className="font-semibold text-primary text-sm sm:text-base">
+                              ${installment.amount_usd}
+                            </TableCell>
+                            <TableCell className="hidden md:table-cell text-sm">
+                              {new Date(installment.due_date).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={`${getStatusColor(installment.status || '')} text-xs`}>
+                                {installment.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="hidden lg:table-cell text-sm">
+                              {installment.payment_method ? getPaymentMethodLabel(installment.payment_method) : '-'}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-1 sm:gap-2">
+                                {installment.status === 'pending' || installment.status === 'overdue' ? (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => markAsPaidMutation.mutate({
+                                      installmentId: installment.id,
+                                      paymentMethod: 'stripe' as PaymentMethod
+                                    })}
+                                    disabled={markAsPaidMutation.isPending}
+                                    className="bg-green-600 hover:bg-green-700 text-xs sm:text-sm px-2 sm:px-4"
+                                  >
+                                    <CheckCircle className="h-3 w-3 mr-1" />
+                                    <span className="hidden sm:inline">Marcar Pagado</span>
+                                    <span className="sm:hidden">Pagado</span>
+                                  </Button>
+                                ) : (
+                                  <span className="text-muted-foreground text-xs sm:text-sm">
+                                    <span className="hidden sm:inline">Pagado el </span>
+                                    {installment.payment_date ? new Date(installment.payment_date).toLocaleDateString() : '-'}
+                                  </span>
+                                )}
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => handleEditPayment(installment)}
+                                >
+                                  <Edit className="h-3 w-3" />
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => handleDeletePayment(installment)}
+                                  className="text-red-600 hover:text-red-700"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="tracking" className="space-y-4">
+          {/* Tracking Filters */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />
+                Filtros de Seguimiento
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    placeholder="Buscar por cliente..." 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <Select value={monthFilter} onValueChange={setMonthFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Filtrar por mes" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los meses</SelectItem>
+                    <SelectItem value="current">Mes Actual</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Tracking Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg sm:text-xl">Seguimiento de Pagos</CardTitle>
+              <CardDescription>
+                {trackingData?.length || 0} cliente(s) encontrado(s)
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0 sm:p-6">
+              {isLoadingTracking ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="min-w-[150px]">Cliente</TableHead>
+                        <TableHead className="min-w-[120px]">Producto</TableHead>
+                        <TableHead className="min-w-[100px]">Fecha</TableHead>
+                        <TableHead className="min-w-[80px]">Cuota</TableHead>
+                        <TableHead className="min-w-[120px]">Costo Total</TableHead>
+                        <TableHead className="min-w-[120px]">Restante a Pagar</TableHead>
+                        <TableHead className="min-w-[100px]">% Completado</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {trackingData?.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                            No se encontraron registros
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        trackingData?.map((item) => {
+                          const completionPercentage = ((item.total_cost_usd - item.remainingAmount) / item.total_cost_usd * 100).toFixed(1)
+                          return (
+                            <TableRow key={item.id} className="hover:bg-muted/50">
+                              <TableCell>
+                                <div>
+                                  <div className="font-medium text-sm sm:text-base">
+                                    {item.clients?.full_name}
+                                  </div>
+                                  <div className="text-xs sm:text-sm text-muted-foreground">
+                                    {item.clients?.email}
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div>
+                                  <div className="font-medium text-sm">
+                                    {item.plans?.name}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground capitalize">
+                                    {item.plans?.plan_type}
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-sm">
+                                {item.latestInstallment?.due_date ? formatDate(item.latestInstallment.due_date) : formatDate(item.start_date)}
+                              </TableCell>
+                              <TableCell className="text-sm">
+                                {item.latestInstallment ? `Cuota ${item.latestInstallment.installment_number}` : 'Sin cuotas'}
+                              </TableCell>
+                              <TableCell className="font-semibold text-sm">
+                                ${item.total_cost_usd.toLocaleString()}
+                              </TableCell>
+                              <TableCell className={`font-semibold text-sm ${item.remainingAmount > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                ${item.remainingAmount.toLocaleString()}
+                              </TableCell>
+                              <TableCell className="text-sm">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-full bg-gray-200 rounded-full h-2">
+                                    <div 
+                                      className="bg-primary h-2 rounded-full" 
+                                      style={{width: `${completionPercentage}%`}}
+                                    ></div>
+                                  </div>
+                                  <span className="text-xs font-medium">{completionPercentage}%</span>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Create/Edit Payment Dialog */}
       <Dialog open={isCreateDialogOpen || isEditDialogOpen} onOpenChange={(open) => {

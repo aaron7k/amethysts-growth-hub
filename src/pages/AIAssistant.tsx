@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -41,6 +41,11 @@ export default function AIAssistant() {
     );
   }
 
+  // Auto-scroll cuando se añadan nuevos mensajes
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -77,11 +82,12 @@ export default function AIAssistant() {
       }
 
       const result = await response.json();
+      console.log('AI Response:', result); // Para debug
       
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'assistant',
-        content: result.response || 'Respuesta del asistente recibida',
+        content: result.response || result.message || 'Respuesta recibida del asistente',
         timestamp: new Date(),
         messageType: 'text'
       };
@@ -89,7 +95,18 @@ export default function AIAssistant() {
       setMessages(prev => [...prev, assistantMessage]);
       
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error enviando mensaje:', error);
+      
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        type: 'assistant',
+        content: 'Lo siento, hubo un error al procesar tu mensaje. Por favor, inténtalo de nuevo.',
+        timestamp: new Date(),
+        messageType: 'text'
+      };
+
+      setMessages(prev => [...prev, errorMessage]);
+      
       toast({
         title: "Error",
         description: "No se pudo enviar el mensaje. Inténtalo de nuevo.",
@@ -97,7 +114,6 @@ export default function AIAssistant() {
       });
     } finally {
       setIsLoading(false);
-      setTimeout(scrollToBottom, 100);
     }
   };
 
@@ -174,7 +190,7 @@ export default function AIAssistant() {
         
         <CardContent className="flex-1 flex flex-col p-6">
           {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto mb-4 space-y-4 pr-2">
+          <div className="flex-1 overflow-y-auto mb-4 space-y-4 pr-2 scroll-smooth">
             {messages.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">
                 <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -199,7 +215,7 @@ export default function AIAssistant() {
                       )}
                     </div>
                     <div className={`
-                      rounded-lg px-4 py-2 
+                      rounded-lg px-4 py-2 break-words
                       ${message.type === 'user' 
                         ? 'bg-primary text-primary-foreground' 
                         : 'bg-secondary text-secondary-foreground'

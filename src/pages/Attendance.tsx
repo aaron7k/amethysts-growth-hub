@@ -58,7 +58,7 @@ export default function Attendance() {
 
   // Fetch events
   const { data: allEvents, isLoading } = useQuery({
-    queryKey: ['events'],
+    queryKey: ['events', sortAscending],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('events')
@@ -315,7 +315,7 @@ export default function Attendance() {
             onClick={() => setSortAscending(!sortAscending)}
           >
             <ArrowUpDown className="mr-2 h-4 w-4" />
-            {sortAscending ? "Más Antiguos Primero" : "Más Recientes Primero"}
+            {sortAscending ? "Más Recientes Primero" : "Más Antiguos Primero"}
           </Button>
           <Button 
             variant={showAllWeeks ? "default" : "outline"}

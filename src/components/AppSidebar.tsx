@@ -9,7 +9,7 @@ const mainItems = [
   { title: "Suscripciones", url: "/subscriptions", icon: FileText },
   { title: "Servicios", url: "/services", icon: Server },
   { title: "Pagos", url: "/payments", icon: CreditCard },
-  { title: "Planes", url: "/plans", icon: Settings },
+  { title: "Productos", url: "/plans", icon: Settings },
   { title: "Nueva Venta", url: "/new-sale", icon: Plus },
   { title: "Onboarding", url: "/onboarding", icon: UserCheck },
   { title: "Aceleradora", url: "/accelerator", icon: Zap },

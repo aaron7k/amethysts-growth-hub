@@ -34,7 +34,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
   onCancel,
   defaultValues,
   isSubmitting = false,
-  submitButtonText = "Crear Plan"
+  submitButtonText = "Crear Producto"
 }) => {
   const form = useForm<PlanFormData>({
     resolver: zodResolver(planSchema),
@@ -69,9 +69,9 @@ export const PlanForm: React.FC<PlanFormProps> = ({
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nombre del Plan</FormLabel>
+              <FormLabel>Nombre del Producto</FormLabel>
               <FormControl>
-                <Input placeholder="Ej: Plan Core Básico" {...field} />
+                <Input placeholder="Ej: Producto Core Básico" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -85,7 +85,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
             <FormItem>
               <FormLabel>Descripción</FormLabel>
               <FormControl>
-                <Textarea placeholder="Descripción del plan..." {...field} />
+                <Textarea placeholder="Descripción del producto..." {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -137,11 +137,11 @@ export const PlanForm: React.FC<PlanFormProps> = ({
           name="plan_type"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Tipo de Plan</FormLabel>
+              <FormLabel>Tipo de Producto</FormLabel>
               <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecciona el tipo de plan" />
+                    <SelectValue placeholder="Selecciona el tipo de producto" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -160,9 +160,9 @@ export const PlanForm: React.FC<PlanFormProps> = ({
           render={({ field }) => (
             <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
               <div className="space-y-0.5">
-                <FormLabel className="text-base">Plan Activo</FormLabel>
+                <FormLabel className="text-base">Producto Activo</FormLabel>
                 <div className="text-sm text-muted-foreground">
-                  Determina si el plan está disponible para nuevas suscripciones
+                  Determina si el producto está disponible para nuevas suscripciones
                 </div>
               </div>
               <FormControl>

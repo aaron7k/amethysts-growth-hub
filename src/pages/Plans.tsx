@@ -55,10 +55,10 @@ const Plans = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['plans'] });
       setIsCreateDialogOpen(false);
-      toast.success('Plan creado exitosamente');
+      toast.success('Producto creado exitosamente');
     },
     onError: (error) => {
-      toast.error('Error al crear el plan: ' + error.message);
+      toast.error('Error al crear el producto: ' + error.message);
     }
   });
 
@@ -88,10 +88,10 @@ const Plans = () => {
       queryClient.invalidateQueries({ queryKey: ['plans'] });
       setIsEditDialogOpen(false);
       setEditingPlan(null);
-      toast.success('Plan actualizado exitosamente');
+      toast.success('Producto actualizado exitosamente');
     },
     onError: (error) => {
-      toast.error('Error al actualizar el plan: ' + error.message);
+      toast.error('Error al actualizar el producto: ' + error.message);
     }
   });
 
@@ -107,10 +107,10 @@ const Plans = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['plans'] });
-      toast.success('Plan eliminado exitosamente');
+      toast.success('Producto eliminado exitosamente');
     },
     onError: (error) => {
-      toast.error('Error al eliminar el plan: ' + error.message);
+      toast.error('Error al eliminar el producto: ' + error.message);
     }
   });
 
@@ -130,7 +130,7 @@ const Plans = () => {
   };
 
   const handleDelete = (id: string) => {
-    if (window.confirm('¿Estás seguro de que quieres eliminar este plan?')) {
+    if (window.confirm('¿Estás seguro de que quieres eliminar este producto?')) {
       deletePlanMutation.mutate(id);
     }
   };
@@ -145,33 +145,33 @@ const Plans = () => {
   };
 
   if (isLoading) {
-    return <div className="flex justify-center items-center h-64">Cargando planes...</div>;
+    return <div className="flex justify-center items-center h-64">Cargando productos...</div>;
   }
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Gestión de Planes</h1>
-          <p className="text-muted-foreground">Administra los planes disponibles para tus clientes</p>
+          <h1 className="text-3xl font-bold">Gestión de Productos</h1>
+          <p className="text-muted-foreground">Administra los productos disponibles para tus clientes</p>
         </div>
         
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
-              Nuevo Plan
+              Nuevo Producto
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Crear Nuevo Plan</DialogTitle>
+              <DialogTitle>Crear Nuevo Producto</DialogTitle>
             </DialogHeader>
             <PlanForm
               onSubmit={handleCreateSubmit}
               onCancel={handleCreateCancel}
               isSubmitting={createPlanMutation.isPending}
-              submitButtonText="Crear Plan"
+              submitButtonText="Crear Producto"
             />
           </DialogContent>
         </Dialog>
@@ -179,7 +179,7 @@ const Plans = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Planes Disponibles</CardTitle>
+          <CardTitle>Productos Disponibles</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -245,7 +245,7 @@ const Plans = () => {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Editar Plan</DialogTitle>
+            <DialogTitle>Editar Producto</DialogTitle>
           </DialogHeader>
           <PlanForm
             onSubmit={handleEditSubmit}
@@ -259,7 +259,7 @@ const Plans = () => {
               is_active: editingPlan.is_active
             } : undefined}
             isSubmitting={updatePlanMutation.isPending}
-            submitButtonText="Actualizar Plan"
+            submitButtonText="Actualizar Producto"
           />
         </DialogContent>
       </Dialog>

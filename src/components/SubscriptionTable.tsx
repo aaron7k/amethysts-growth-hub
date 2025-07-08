@@ -119,7 +119,7 @@ export const SubscriptionTable = ({
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
-            placeholder="Buscar por cliente, plan o email..."
+            placeholder="Buscar por cliente, producto o email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -146,7 +146,7 @@ export const SubscriptionTable = ({
             <TableHeader>
               <TableRow>
                 <TableHead>Cliente</TableHead>
-                <TableHead>Plan</TableHead>
+                <TableHead>Producto</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead>Siguiente Paso</TableHead>
                 <TableHead>Fecha Inicio</TableHead>

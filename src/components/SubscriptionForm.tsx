@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 
 const subscriptionSchema = z.object({
   client_id: z.string().min(1, "Cliente es requerido"),
-  plan_id: z.string().min(1, "Plan es requerido"),
+  plan_id: z.string().min(1, "Producto es requerido"),
   start_date: z.date({
     required_error: "Fecha de inicio es requerida",
   }),
@@ -104,7 +104,7 @@ export const SubscriptionForm = ({ subscription, onSuccess, onCancel }: Subscrip
       // Calculate end_date based on start_date and plan duration
       const selectedPlan = plans?.find(plan => plan.id === data.plan_id);
       if (!selectedPlan) {
-        throw new Error("Plan no encontrado");
+        throw new Error("Producto no encontrado");
       }
 
       const endDate = addDays(data.start_date, selectedPlan.duration_days);
@@ -146,7 +146,7 @@ export const SubscriptionForm = ({ subscription, onSuccess, onCancel }: Subscrip
       // Calculate end_date based on start_date and plan duration
       const selectedPlan = plans?.find(plan => plan.id === data.plan_id);
       if (!selectedPlan) {
-        throw new Error("Plan no encontrado");
+        throw new Error("Producto no encontrado");
       }
 
       const endDate = addDays(data.start_date, selectedPlan.duration_days);
@@ -231,11 +231,11 @@ export const SubscriptionForm = ({ subscription, onSuccess, onCancel }: Subscrip
             name="plan_id"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Plan</FormLabel>
+                <FormLabel>Producto</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar plan" />
+                      <SelectValue placeholder="Seleccionar producto" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>

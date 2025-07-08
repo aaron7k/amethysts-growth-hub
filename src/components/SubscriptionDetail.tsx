@@ -29,6 +29,13 @@ export const SubscriptionDetail = ({ subscription, onClose }: SubscriptionDetail
     }
   });
 
+  // Calculate remaining amount to pay
+  const remainingToPay = installments
+    ? installments
+        .filter(installment => installment.status === 'pending' || installment.status === 'overdue')
+        .reduce((total, installment) => total + installment.amount_usd, 0)
+    : 0;
+
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       active: { label: "Activa", className: "bg-green-100 text-green-800" },
@@ -115,12 +122,12 @@ export const SubscriptionDetail = ({ subscription, onClose }: SubscriptionDetail
           </CardContent>
         </Card>
 
-        {/* Plan Information */}
+        {/* Producto Information */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Package className="h-4 w-4" />
-              Información del Plan
+              Información del Producto
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -164,6 +171,13 @@ export const SubscriptionDetail = ({ subscription, onClose }: SubscriptionDetail
               <div className="flex items-center gap-2">
                 <DollarSign className="h-4 w-4" />
                 <p>${subscription.total_cost_usd.toLocaleString()}</p>
+              </div>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Restante a Pagar</p>
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-4 w-4" />
+                <p className={remainingToPay > 0 ? "text-red-600 font-semibold" : "text-green-600"}>${remainingToPay.toLocaleString()}</p>
               </div>
             </div>
           </div>

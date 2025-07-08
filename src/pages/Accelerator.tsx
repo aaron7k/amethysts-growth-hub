@@ -15,6 +15,7 @@ import { useState } from "react"
 import StageChecklist from "@/components/StageChecklist"
 import ChecklistTemplateManager from "@/components/ChecklistTemplateManager"
 import DiscordChannelManager from "@/components/DiscordChannelManager"
+import AcceleratorMessageManager from "@/components/AcceleratorMessageManager"
 
 interface AcceleratorProgram {
   id: string
@@ -726,6 +727,11 @@ const Accelerator = () => {
                 <h3 className="text-lg font-semibold">Detalle Completo</h3>
                 <div className="flex gap-2">
                   <DiscordChannelManager 
+                    subscriptionId={program.subscription_id}
+                    clientName={program.subscriptions.clients.full_name}
+                  />
+                  
+                  <AcceleratorMessageManager 
                     subscriptionId={program.subscription_id}
                     clientName={program.subscriptions.clients.full_name}
                   />

@@ -180,7 +180,7 @@ export default function AIAssistant() {
         </p>
       </div>
 
-      <Card className="h-[600px] flex flex-col">
+      <Card className="h-[700px] flex flex-col">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Bot className="h-5 w-5" />
@@ -190,7 +190,7 @@ export default function AIAssistant() {
         
         <CardContent className="flex-1 flex flex-col p-6">
           {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto mb-4 space-y-4 pr-2 scroll-smooth">
+          <div className="flex-1 overflow-y-auto mb-4 space-y-4 pr-2 scroll-smooth max-h-[500px]">
             {messages.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">
                 <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -258,7 +258,7 @@ export default function AIAssistant() {
           </div>
 
           {/* Input Area */}
-          <div className="border-t pt-4">
+          <div className="border-t pt-4 mt-auto">
             <div className="flex gap-2">
               <Textarea
                 value={input}

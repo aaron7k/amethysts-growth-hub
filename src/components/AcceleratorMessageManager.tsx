@@ -8,9 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
-import { MessageSquare, Send, Image, Video, Mic, AtSign, X } from "lucide-react";
+import { MessageSquare, Send, Image, Video, Mic, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface AcceleratorMessageManagerProps {
@@ -39,7 +38,7 @@ const AcceleratorMessageManager = ({ subscriptionId, clientName }: AcceleratorMe
   const [messageType, setMessageType] = useState<'text' | 'image' | 'video' | 'audio'>('text');
   const [message, setMessage] = useState('');
   const [file, setFile] = useState<File | null>(null);
-  const [mentionAll, setMentionAll] = useState(false);
+  
   const [isSending, setIsSending] = useState(false);
 
   // Obtener servicios de Discord para esta suscripción
@@ -146,7 +145,7 @@ const AcceleratorMessageManager = ({ subscriptionId, clientName }: AcceleratorMe
         platform: 'discord',
         messageType: messageType,
         message: message,
-        mentionAll: mentionAll,
+        mentionAll: false, // Discord channels don't need @everyone
         timestamp: new Date().toISOString(),
         sender: `Aceleradora - ${clientName}`,
         // Información específica del canal de Discord
@@ -199,7 +198,7 @@ const AcceleratorMessageManager = ({ subscriptionId, clientName }: AcceleratorMe
       setMessage('');
       setFile(null);
       setSelectedChannel('');
-      setMentionAll(false);
+      
       setOpen(false);
       
     } catch (error) {
@@ -367,18 +366,6 @@ const AcceleratorMessageManager = ({ subscriptionId, clientName }: AcceleratorMe
                 </div>
               )}
 
-              {/* Mencionar todos */}
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="mention-all"
-                  checked={mentionAll}
-                  onCheckedChange={setMentionAll}
-                />
-                <Label htmlFor="mention-all" className="flex items-center gap-2">
-                  <AtSign className="h-4 w-4" />
-                  Mencionar a todos (@everyone)
-                </Label>
-              </div>
 
               {/* Vista previa del canal seleccionado */}
               {selectedChannel && (

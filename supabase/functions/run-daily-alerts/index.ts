@@ -55,21 +55,20 @@ serve(async (req) => {
       console.log('Accelerator stage changes checked successfully')
     }
 
-    // Obtener SOLO las alertas que se crearon en esta ejecución
-    const { data: newAlerts, error: fetchError } = await supabaseClient
+    // Obtener TODAS las alertas pendientes (nuevas y antiguas)
+    const { data: pendingAlerts, error: fetchError } = await supabaseClient
       .from('alerts')
-      .select('id, alert_type')
+      .select('id, alert_type, created_at')
       .eq('status', 'pending')
-      .gte('created_at', executionStartTime)
       .order('created_at', { ascending: true })
 
     if (fetchError) {
-      console.error('Error fetching new alerts:', fetchError)
-    } else if (newAlerts && newAlerts.length > 0) {
-      console.log(`Found ${newAlerts.length} new alerts created in this execution to send`)
+      console.error('Error fetching pending alerts:', fetchError)
+    } else if (pendingAlerts && pendingAlerts.length > 0) {
+      console.log(`Found ${pendingAlerts.length} pending alerts to send (includes previous unsent alerts)`)
       
-      // Enviar cada alerta nueva
-      for (const alert of newAlerts) {
+      // Enviar cada alerta pendiente
+      for (const alert of pendingAlerts) {
         try {
           // Determinar qué función usar según el tipo de alerta
           const functionName = (alert.alert_type === 'stage_change' || alert.alert_type === 'stage_overdue') 
@@ -90,14 +89,14 @@ serve(async (req) => {
         }
       }
     } else {
-      console.log('No new alerts were created in this execution')
+      console.log('No pending alerts found to send')
     }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         message: 'Daily alerts cron job completed successfully',
-        newAlertsProcessed: newAlerts?.length || 0
+        pendingAlertsProcessed: pendingAlerts?.length || 0
       }),
       { 
         status: 200, 

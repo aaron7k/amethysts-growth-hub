@@ -37,6 +37,9 @@ export default function Attendance() {
   const [attendanceEmail, setAttendanceEmail] = useState('')
   const [emailFilter, setEmailFilter] = useState('')
   const [sortAscending, setSortAscending] = useState(false)
+  const [addEmailDialogOpen, setAddEmailDialogOpen] = useState(false)
+  const [selectedEventForEmail, setSelectedEventForEmail] = useState<Event | null>(null)
+  const [newEmailToAdd, setNewEmailToAdd] = useState('')
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
@@ -88,10 +91,12 @@ export default function Attendance() {
       grouped[weekKey].push(event)
     })
     
-    // Sort events within each week by date (closest/most recent first)
+    // Sort events within each week by date
     Object.keys(grouped).forEach(weekKey => {
       grouped[weekKey].sort((a, b) => 
-        new Date(b.event_date).getTime() - new Date(a.event_date).getTime()
+        sortAscending 
+          ? new Date(a.event_date).getTime() - new Date(b.event_date).getTime()
+          : new Date(b.event_date).getTime() - new Date(a.event_date).getTime()
       )
     })
     
@@ -158,6 +163,44 @@ export default function Attendance() {
       toast({
         title: "Error",
         description: "No se pudo eliminar el evento.",
+        variant: "destructive"
+      })
+    }
+  })
+
+  // Add email to event mutation
+  const addEmailMutation = useMutation({
+    mutationFn: async ({ eventId, email }: { eventId: string, email: string }) => {
+      const event = allEvents?.find(e => e.id === eventId)
+      if (!event) throw new Error("Evento no encontrado")
+
+      if (event.invited_emails.includes(email)) {
+        throw new Error("Este email ya está invitado al evento")
+      }
+
+      const updatedInvitedEmails = [...event.invited_emails, email]
+
+      const { error } = await supabase
+        .from('events')
+        .update({ invited_emails: updatedInvitedEmails })
+        .eq('id', eventId)
+      
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events'] })
+      setAddEmailDialogOpen(false)
+      setSelectedEventForEmail(null)
+      setNewEmailToAdd('')
+      toast({
+        title: "Email agregado",
+        description: "El email ha sido agregado al evento exitosamente."
+      })
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "No se pudo agregar el email.",
         variant: "destructive"
       })
     }
@@ -324,6 +367,16 @@ export default function Attendance() {
                             <Button
                               variant="outline"
                               size="sm"
+                              onClick={() => {
+                                setSelectedEventForEmail(event)
+                                setAddEmailDialogOpen(true)
+                              }}
+                            >
+                              <Plus className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
                               onClick={() => handleEditEvent(event)}
                             >
                               <Edit className="h-3 w-3" />
@@ -433,26 +486,36 @@ export default function Attendance() {
                       {format(new Date(event.event_date), 'PPP', { locale: es })}
                     </CardDescription>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">
-                      {getAttendanceRate(event)}% asistencia
-                    </Badge>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEditEvent(event)}
-                    >
-                      <Edit className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteEvent(event.id)}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
+                   <div className="flex items-center gap-2">
+                     <Badge variant="outline">
+                       {getAttendanceRate(event)}% asistencia
+                     </Badge>
+                     <Button
+                       variant="outline"
+                       size="sm"
+                       onClick={() => {
+                         setSelectedEventForEmail(event)
+                         setAddEmailDialogOpen(true)
+                       }}
+                     >
+                       <Plus className="h-3 w-3" />
+                     </Button>
+                     <Button
+                       variant="outline"
+                       size="sm"
+                       onClick={() => handleEditEvent(event)}
+                     >
+                       <Edit className="h-3 w-3" />
+                     </Button>
+                     <Button
+                       variant="outline"
+                       size="sm"
+                       onClick={() => handleDeleteEvent(event.id)}
+                       className="text-red-600 hover:text-red-700"
+                     >
+                       <Trash2 className="h-3 w-3" />
+                     </Button>
+                   </div>
                 </div>
               </CardHeader>
               
@@ -587,6 +650,45 @@ export default function Attendance() {
               disabled={!newEvent.name || !newEvent.event_date || updateEventMutation.isPending}
             >
               {updateEventMutation.isPending ? "Actualizando..." : "Actualizar Evento"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Email Dialog */}
+      <Dialog open={addEmailDialogOpen} onOpenChange={setAddEmailDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Agregar Email al Evento</DialogTitle>
+            <DialogDescription>
+              Agregar un nuevo email a la lista de invitados del evento "{selectedEventForEmail?.name}".
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="new-email">Email</Label>
+              <Input
+                id="new-email"
+                type="email"
+                value={newEmailToAdd}
+                onChange={(e) => setNewEmailToAdd(e.target.value)}
+                placeholder="nuevo@email.com"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              onClick={() => {
+                if (selectedEventForEmail && newEmailToAdd.trim()) {
+                  addEmailMutation.mutate({ 
+                    eventId: selectedEventForEmail.id, 
+                    email: newEmailToAdd.trim() 
+                  })
+                }
+              }}
+              disabled={!newEmailToAdd.trim() || addEmailMutation.isPending}
+            >
+              {addEmailMutation.isPending ? "Agregando..." : "Agregar Email"}
             </Button>
           </DialogFooter>
         </DialogContent>

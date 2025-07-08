@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Calendar, Users, UserCheck, UserX, Plus, CheckCircle, Edit, Trash2, CalendarDays, Search } from "lucide-react"
+import { Calendar, Users, UserCheck, UserX, Plus, CheckCircle, Edit, Trash2, CalendarDays, Search, ArrowUpDown } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { format, startOfWeek, endOfWeek, startOfDay, endOfDay, parseISO } from "date-fns"
 import { es } from "date-fns/locale"
@@ -36,6 +36,7 @@ export default function Attendance() {
   })
   const [attendanceEmail, setAttendanceEmail] = useState('')
   const [emailFilter, setEmailFilter] = useState('')
+  const [sortAscending, setSortAscending] = useState(false)
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
@@ -59,7 +60,7 @@ export default function Attendance() {
       const { data, error } = await supabase
         .from('events')
         .select('*')
-        .order('event_date', { ascending: false })
+        .order('event_date', { ascending: sortAscending })
       
       if (error) throw error
       return data as Event[]
@@ -266,6 +267,13 @@ export default function Attendance() {
               className="pl-10"
             />
           </div>
+          <Button 
+            variant="outline"
+            onClick={() => setSortAscending(!sortAscending)}
+          >
+            <ArrowUpDown className="mr-2 h-4 w-4" />
+            {sortAscending ? "Más Antiguos Primero" : "Más Recientes Primero"}
+          </Button>
           <Button 
             variant={showAllWeeks ? "default" : "outline"}
             onClick={() => setShowAllWeeks(!showAllWeeks)}

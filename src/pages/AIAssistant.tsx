@@ -184,7 +184,7 @@ export default function AIAssistant() {
   return (
     <div className="h-full flex flex-col bg-background relative">
       {/* Header - Fixed */}
-      <div className="fixed top-16 left-64 right-0 z-10 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/95">
+      <div className="fixed top-16 left-64 right-0 z-10 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/95 shadow-card">
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-2">
             <Bot className="h-5 w-5 text-primary" />
@@ -255,13 +255,13 @@ export default function AIAssistant() {
                       <Bot className="h-4 w-4 text-secondary-foreground" />
                     )}
                   </div>
-                  <div className={`
-                    rounded-lg px-4 py-2 break-words
-                    ${message.type === 'user' 
-                      ? 'bg-primary text-primary-foreground' 
-                      : 'bg-secondary text-secondary-foreground'
-                    }
-                  `}>
+                   <div className={`
+                     rounded-lg px-4 py-2 break-words shadow-enhanced
+                     ${message.type === 'user' 
+                       ? 'bg-primary text-primary-foreground' 
+                       : 'bg-secondary text-secondary-foreground'
+                     }
+                   `}>
                     {message.messageType === 'audio' && message.type === 'user' ? (
                       <div className="flex items-center gap-2">
                         <Mic className="h-4 w-4" />
@@ -309,7 +309,7 @@ export default function AIAssistant() {
       </div>
 
       {/* Input Area - Fixed */}
-      <div className="fixed bottom-0 left-64 right-0 z-10 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/95 p-4">
+      <div className="fixed bottom-0 left-64 right-0 z-10 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/95 p-4 shadow-floating">
         <div className="flex gap-2">
           <Textarea
             ref={inputRef}

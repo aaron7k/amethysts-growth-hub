@@ -175,7 +175,7 @@ export default function AIAssistant() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-background overflow-hidden">
+    <div className="fixed inset-0 flex flex-col bg-background">
       {/* Header */}
       <div className="flex-shrink-0 border-b border-border bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50">
         <div className="flex items-center gap-2 p-4">

@@ -194,14 +194,7 @@ export default function AIAssistant() {
           <div className="flex items-center gap-2">
             <Select value={assistantType} onValueChange={(value: 'sql' | 'rag') => setAssistantType(value)}>
               <SelectTrigger className="w-[160px]">
-                <div className="flex items-center gap-2">
-                  {assistantType === 'sql' ? (
-                    <Database className="h-4 w-4" />
-                  ) : (
-                    <BookOpen className="h-4 w-4" />
-                  )}
-                  <SelectValue />
-                </div>
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="sql">

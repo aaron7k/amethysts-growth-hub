@@ -36,7 +36,7 @@ export default function Attendance() {
   })
   const [attendanceEmail, setAttendanceEmail] = useState('')
   const [emailFilter, setEmailFilter] = useState('')
-  const [sortAscending, setSortAscending] = useState(false)
+  const [sortAscending, setSortAscending] = useState(true)
   const [addEmailDialogOpen, setAddEmailDialogOpen] = useState(false)
   const [selectedEventForEmail, setSelectedEventForEmail] = useState<Event | null>(null)
   const [newEmailToAdd, setNewEmailToAdd] = useState('')
@@ -69,6 +69,27 @@ export default function Attendance() {
       return data as Event[]
     }
   })
+
+  // Fetch clients for name lookup
+  const { data: clients } = useQuery({
+    queryKey: ['clients'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('email, full_name')
+      
+      if (error) throw error
+      return data
+    }
+  })
+
+  // Create email to name mapping
+  const emailToName = clients?.reduce((acc, client) => {
+    if (client.email) {
+      acc[client.email] = client.full_name
+    }
+    return acc
+  }, {} as Record<string, string>) || {}
 
   // Filter events based on current view
   const events = showAllWeeks 
@@ -434,11 +455,21 @@ export default function Attendance() {
                                  emailFilter === '' || 
                                  email.toLowerCase().includes(emailFilter.toLowerCase())
                                )
-                               .map((email) => {
-                               const hasAttended = event.attended_emails.includes(email)
-                               return (
-                                 <div key={email} className="flex items-center justify-between p-2 border rounded">
-                                   <span className="text-sm">{email}</span>
+                                .map((email) => {
+                                const hasAttended = event.attended_emails.includes(email)
+                                const personName = emailToName[email]
+                                return (
+                                  <div key={email} className="flex items-center justify-between p-2 border rounded">
+                                    <div className="text-sm">
+                                      {personName ? (
+                                        <div>
+                                          <div className="font-medium">{personName}</div>
+                                          <div className="text-xs text-muted-foreground">{email}</div>
+                                        </div>
+                                      ) : (
+                                        <span>{email}</span>
+                                      )}
+                                    </div>
                                    <div className="flex items-center gap-2">
                                      {hasAttended ? (
                                        <Badge className="bg-green-100 text-green-800">
@@ -560,11 +591,21 @@ export default function Attendance() {
                          emailFilter === '' || 
                          email.toLowerCase().includes(emailFilter.toLowerCase())
                        )
-                       .map((email) => {
-                       const hasAttended = event.attended_emails.includes(email)
-                       return (
-                         <div key={email} className="flex items-center justify-between p-2 border rounded">
-                           <span className="text-sm">{email}</span>
+                        .map((email) => {
+                        const hasAttended = event.attended_emails.includes(email)
+                        const personName = emailToName[email]
+                        return (
+                          <div key={email} className="flex items-center justify-between p-2 border rounded">
+                            <div className="text-sm">
+                              {personName ? (
+                                <div>
+                                  <div className="font-medium">{personName}</div>
+                                  <div className="text-xs text-muted-foreground">{email}</div>
+                                </div>
+                              ) : (
+                                <span>{email}</span>
+                              )}
+                            </div>
                            <div className="flex items-center gap-2">
                              {hasAttended ? (
                                <Badge className="bg-green-100 text-green-800">

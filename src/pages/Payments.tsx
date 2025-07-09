@@ -859,10 +859,10 @@ export default function Payments() {
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
-                      <PopoverContent className="w-[400px] p-0 pointer-events-auto">
+                      <PopoverContent className="w-[400px] p-0 z-50">
                         <Command>
                           <CommandInput placeholder="Buscar suscripción..." />
-                          <CommandList>
+                          <CommandList className="max-h-[200px]">
                             <CommandEmpty>No se encontraron suscripciones.</CommandEmpty>
                             <CommandGroup>
                               {subscriptions?.map((subscription) => (

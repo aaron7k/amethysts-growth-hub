@@ -205,12 +205,6 @@ export default function Clients() {
             Administra la información y historial de todos tus clientes
           </p>
         </div>
-        <Link to="/new-sale" className="flex-shrink-0">
-          <Button className="amethyst-gradient hover:opacity-90 transition-opacity w-full sm:w-auto">
-            <UserPlus className="h-4 w-4 mr-2" />
-            Nuevo Cliente
-          </Button>
-        </Link>
       </div>
 
       {/* Search and Filters */}

@@ -200,7 +200,11 @@ const Plans = () => {
                     <div>
                       <div className="font-medium">{plan.name}</div>
                       {plan.description && (
-                        <div className="text-sm text-muted-foreground">{plan.description}</div>
+                        <div className="text-sm text-muted-foreground max-w-xs">
+                          <div className="whitespace-pre-wrap break-words line-clamp-3">
+                            {plan.description}
+                          </div>
+                        </div>
                       )}
                     </div>
                   </TableCell>

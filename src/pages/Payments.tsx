@@ -429,7 +429,7 @@ export default function Payments() {
         {activeTab === "payments" && (
           <Button onClick={handleCreatePayment} className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
-            Nuevo Pago
+            Registrar Pago
           </Button>
         )}
       </div>
@@ -825,7 +825,7 @@ export default function Payments() {
       }}>
         <DialogContent className="sm:max-w-[500px] max-h-[85vh] overflow-y-auto pointer-events-auto">
           <DialogHeader>
-            <DialogTitle>{editingPayment ? 'Editar Pago' : 'Crear Nuevo Pago'}</DialogTitle>
+            <DialogTitle>{editingPayment ? 'Editar Pago' : 'Registrar Pago'}</DialogTitle>
             <DialogDescription>
               {editingPayment ? 'Actualiza la información del pago aquí.' : 'Crea una nueva cuota de pago aquí.'}
             </DialogDescription>

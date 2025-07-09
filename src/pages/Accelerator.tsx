@@ -448,6 +448,41 @@ const Accelerator = () => {
     }
   }
 
+  // Verificar si el checklist de una etapa está completo
+  const { data: stageChecklistComplete } = useQuery({
+    queryKey: ['stage-checklist-complete', selectedProgramForActivation?.subscription_id],
+    queryFn: async () => {
+      if (!selectedProgramForActivation?.subscription_id) return {}
+      
+      const stageCompletionMap: { [key: number]: boolean } = {}
+      
+      // Verificar cada etapa (1-4)
+      for (let stageNum = 1; stageNum <= 4; stageNum++) {
+        const { data, error } = await supabase
+          .rpc('get_stage_checklist_progress', {
+            p_subscription_id: selectedProgramForActivation.subscription_id,
+            p_stage_number: stageNum
+          })
+        
+        if (error) {
+          console.error('Error fetching checklist:', error)
+          stageCompletionMap[stageNum] = false
+          continue
+        }
+        
+        // Verificar si todos los items requeridos están completos
+        const allRequiredCompleted = data.every((item: any) => 
+          !item.is_required || item.is_completed
+        )
+        
+        stageCompletionMap[stageNum] = allRequiredCompleted
+      }
+      
+      return stageCompletionMap
+    },
+    enabled: !!selectedProgramForActivation?.subscription_id && activateStagesOpen
+  })
+
   // Activar/Desactivar etapa
   const toggleStageActivation = async (stageId: string, stageNumber: number, activate: boolean, clientId: string) => {
     try {
@@ -1285,7 +1320,12 @@ const Accelerator = () => {
                        variant={stage.is_activated ? "default" : "outline"}
                        className={`h-24 flex flex-col items-center justify-center p-2 ${
                          stage.is_activated ? 'opacity-75' : ''
+                       } ${
+                         !stage.is_activated && stageChecklistComplete && !stageChecklistComplete[stage.stage_number] 
+                           ? 'opacity-50 cursor-not-allowed' 
+                           : ''
                        }`}
+                       disabled={!stage.is_activated && stageChecklistComplete && !stageChecklistComplete[stage.stage_number]}
                        onClick={() => 
                          toggleStageActivation(
                            stage.id, 
@@ -1304,14 +1344,16 @@ const Accelerator = () => {
                        )}
                      </Button>
                   </TooltipTrigger>
-                  <TooltipContent>
-                    <p>
-                      {stage.is_activated 
-                        ? `Desactivar la ${stage.stage_name}` 
-                        : `Activar la ${stage.stage_name}`
-                      }
-                    </p>
-                  </TooltipContent>
+                   <TooltipContent>
+                     <p>
+                       {stage.is_activated 
+                         ? `Desactivar la ${stage.stage_name}` 
+                         : stageChecklistComplete && !stageChecklistComplete[stage.stage_number]
+                           ? `No se puede activar: checklist de ${stage.stage_name} incompleto`
+                           : `Activar la ${stage.stage_name}`
+                       }
+                     </p>
+                   </TooltipContent>
                 </Tooltip>
               ))}
             </TooltipProvider>

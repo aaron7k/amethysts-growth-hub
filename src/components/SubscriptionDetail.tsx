@@ -151,7 +151,7 @@ export const SubscriptionDetail = ({ subscription, onClose }: SubscriptionDetail
           <CardTitle>Detalles de la Suscripción</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Fecha de Inicio</p>
               <div className="flex items-center gap-2">
@@ -213,8 +213,8 @@ export const SubscriptionDetail = ({ subscription, onClose }: SubscriptionDetail
           <CardContent>
             <div className="space-y-3">
               {installments.map((installment) => (
-                <div key={installment.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div>
+                <div key={installment.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border rounded-lg gap-2">
+                  <div className="flex-1">
                     <p className="font-medium">Cuota #{installment.installment_number}</p>
                     <p className="text-sm text-muted-foreground">
                       Vence: {formatSafeDate(installment.due_date)}
@@ -225,7 +225,7 @@ export const SubscriptionDetail = ({ subscription, onClose }: SubscriptionDetail
                       </p>
                     )}
                   </div>
-                  <div className="text-right">
+                  <div className="flex flex-row sm:flex-col items-start sm:items-end justify-between sm:justify-start gap-2">
                     <p className="font-medium">${installment.amount_usd.toLocaleString()}</p>
                     {getInstallmentStatusBadge(installment.status)}
                   </div>

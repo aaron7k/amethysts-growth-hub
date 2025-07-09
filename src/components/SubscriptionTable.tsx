@@ -145,14 +145,14 @@ export const SubscriptionTable = ({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Producto</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Siguiente Paso</TableHead>
-                <TableHead>Fecha Inicio</TableHead>
-                <TableHead>Fecha Fin</TableHead>
-                <TableHead>Costo Total</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
+                <TableHead className="min-w-[150px]">Cliente</TableHead>
+                <TableHead className="min-w-[120px]">Producto</TableHead>
+                <TableHead className="min-w-[100px]">Estado</TableHead>
+                <TableHead className="min-w-[130px] hidden sm:table-cell">Siguiente Paso</TableHead>
+                <TableHead className="min-w-[100px] hidden md:table-cell">Fecha Inicio</TableHead>
+                <TableHead className="min-w-[100px] hidden md:table-cell">Fecha Fin</TableHead>
+                <TableHead className="min-w-[100px] hidden lg:table-cell">Costo Total</TableHead>
+                <TableHead className="text-right min-w-[120px]">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -167,53 +167,70 @@ export const SubscriptionTable = ({
                   <TableRow key={subscription.id}>
                     <TableCell>
                       <div>
-                        <div className="font-medium">{subscription.clients.full_name}</div>
-                        <div className="text-sm text-muted-foreground">{subscription.clients.email}</div>
+                        <div className="font-medium text-sm sm:text-base">{subscription.clients.full_name}</div>
+                        <div className="text-xs sm:text-sm text-muted-foreground">{subscription.clients.email}</div>
+                        {/* Show hidden info on mobile */}
+                        <div className="mt-1 space-y-1 sm:hidden">
+                          {subscription.next_step && (
+                            <div className="text-xs">
+                              Paso: {getNextStepBadge(subscription.next_step)}
+                            </div>
+                          )}
+                          <div className="text-xs text-muted-foreground">
+                            {formatSafeDate(subscription.start_date)} - {formatSafeDate(subscription.end_date)}
+                          </div>
+                          <div className="text-xs font-medium md:hidden lg:hidden">
+                            {formatSafeCurrency(subscription.total_cost_usd)}
+                          </div>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div>
-                        <div className="font-medium">{subscription.plans.name}</div>
-                        <div className="text-sm text-muted-foreground capitalize">{subscription.plans.plan_type}</div>
+                        <div className="font-medium text-sm sm:text-base">{subscription.plans.name}</div>
+                        <div className="text-xs sm:text-sm text-muted-foreground capitalize">{subscription.plans.plan_type}</div>
                       </div>
                     </TableCell>
                     <TableCell>
                       {getStatusBadge(subscription.status)}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden sm:table-cell">
                       {subscription.next_step && getNextStepBadge(subscription.next_step)}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden md:table-cell">
                       {formatSafeDate(subscription.start_date)}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden md:table-cell">
                       {formatSafeDate(subscription.end_date)}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden lg:table-cell">
                       {formatSafeCurrency(subscription.total_cost_usd)}
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
+                      <div className="flex justify-end gap-1 sm:gap-2">
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => onView(subscription)}
+                          className="h-8 w-8 p-0 sm:h-9 sm:w-9"
                         >
-                          <Eye className="h-4 w-4" />
+                          <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => onEdit(subscription)}
+                          className="h-8 w-8 p-0 sm:h-9 sm:w-9"
                         >
-                          <Edit className="h-4 w-4" />
+                          <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => onDelete(subscription)}
+                          className="h-8 w-8 p-0 sm:h-9 sm:w-9"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                         </Button>
                       </div>
                     </TableCell>

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { Calendar, Clock, CheckCircle, AlertTriangle, Target, Users, Settings, Play, CalendarPlus, UserCheck, FileText, Filter } from "lucide-react"
+import { Calendar, Clock, CheckCircle, AlertTriangle, Target, Users, Settings, Play, CalendarPlus, UserCheck, FileText, Filter, ClipboardList } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -14,6 +14,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Checkbox } from "@/components/ui/checkbox"
 import { Textarea } from "@/components/ui/textarea"
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import StageChecklist from "@/components/StageChecklist"
 import ChecklistTemplateManager from "@/components/ChecklistTemplateManager"
 import DiscordChannelManager from "@/components/DiscordChannelManager"
@@ -89,6 +90,7 @@ const CHECKLIST_ITEMS = [
 ]
 
 const Accelerator = () => {
+  const navigate = useNavigate()
   const [selectedProgram, setSelectedProgram] = useState<string | null>(null)
   const [newProgramOpen, setNewProgramOpen] = useState(false)
   const [selectedSubscription, setSelectedSubscription] = useState<string>("")
@@ -1188,6 +1190,15 @@ const Accelerator = () => {
                     )}
                   >
                     {selectedProgram === program.subscription_id ? 'Ocultar' : 'Ver'} Detalle
+                  </Button>
+                  
+                  <Button
+                    size="sm"
+                    onClick={() => navigate(`/stage-checklist/${program.subscription_id}/${encodeURIComponent(program.subscriptions.clients.full_name)}`)}
+                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                  >
+                    <ClipboardList className="mr-1 h-3 w-3" />
+                    Checklist
                   </Button>
                   
                   {/* Onboarding Button */}

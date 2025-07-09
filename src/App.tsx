@@ -27,6 +27,7 @@ import NotFound from "./pages/NotFound";
 import Documentation from "./pages/Documentation";
 import SendMessage from "./pages/SendMessage";
 import AIAssistant from "./pages/AIAssistant";
+import StageChecklistPage from "./pages/StageChecklistPage";
 
 const queryClient = new QueryClient();
 
@@ -64,6 +65,7 @@ const App = () => (
                             <Route path="/documentation" element={<Documentation />} />
                             <Route path="/send-message" element={<SendMessage />} />
                             <Route path="/ai-assistant" element={<AIAssistant />} />
+                            <Route path="/stage-checklist/:subscriptionId/:clientName" element={<StageChecklistPage />} />
                             <Route path="*" element={<NotFound />} />
                           </Routes>
                         </main>

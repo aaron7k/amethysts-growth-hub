@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator"
 import { supabase } from "@/integrations/supabase/client"
 import { Users, DollarSign, TrendingUp, AlertCircle, CheckCircle, Clock, UserPlus } from "lucide-react"
 import { Link } from "react-router-dom"
+import { QuickAccessShortcuts } from "@/components/QuickAccessShortcuts"
 
 export default function Dashboard() {
   const { data: metrics } = useQuery({
@@ -165,6 +166,9 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Quick Access Shortcuts */}
+      <QuickAccessShortcuts />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Pending Tasks */}

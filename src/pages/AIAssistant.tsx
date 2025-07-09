@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 import { Send, Mic, MicOff, Bot, User, Loader2 } from "lucide-react";
+import ReactMarkdown from 'react-markdown';
 
 interface Message {
   id: string;
@@ -38,15 +38,13 @@ export default function AIAssistant() {
   // Verificar si es super admin DESPUÉS de todos los hooks
   if (!profile?.super_admin) {
     return (
-      <div className="container mx-auto p-6">
-        <Card>
-          <CardContent className="p-6 text-center">
-            <h2 className="text-xl font-semibold text-destructive mb-2">Acceso Denegado</h2>
-            <p className="text-muted-foreground">
-              Esta funcionalidad solo está disponible para Super Administradores.
-            </p>
-          </CardContent>
-        </Card>
+      <div className="h-screen flex items-center justify-center bg-background">
+        <div className="text-center p-6 bg-card border border-border rounded-lg">
+          <h2 className="text-xl font-semibold text-destructive mb-2">Acceso Denegado</h2>
+          <p className="text-muted-foreground">
+            Esta funcionalidad solo está disponible para Super Administradores.
+          </p>
+        </div>
       </div>
     );
   }
@@ -177,64 +175,65 @@ export default function AIAssistant() {
   };
 
   return (
-    <div className="h-screen flex flex-col">
-      <Card className="flex-1 flex flex-col m-0 border-0 rounded-none shadow-none">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Bot className="h-5 w-5" />
-            Chat con Asistente IA
-          </CardTitle>
-        </CardHeader>
-        
-        <CardContent className="flex-1 flex flex-col p-6">
-          {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto mb-4 space-y-4 pr-2 scroll-smooth">
-            {messages.length === 0 ? (
-              <div className="text-center text-muted-foreground py-8">
-                <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>¡Hola! Soy tu asistente de IA para consultas de base de datos.</p>
-                <p className="text-sm mt-2">Puedes escribir o hablar para hacer consultas.</p>
-              </div>
-            ) : (
-              messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div className={`flex gap-3 max-w-[80%] ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-                    <div className={`
-                      w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0
-                      ${message.type === 'user' ? 'bg-primary' : 'bg-secondary'}
-                    `}>
-                      {message.type === 'user' ? (
-                        <User className="h-4 w-4 text-primary-foreground" />
-                      ) : (
-                        <Bot className="h-4 w-4 text-secondary-foreground" />
-                      )}
-                    </div>
-                    <div className={`
-                      rounded-lg px-4 py-2 break-words
-                      ${message.type === 'user' 
-                        ? 'bg-primary text-primary-foreground' 
-                        : 'bg-secondary text-secondary-foreground'
-                      }
-                    `}>
-                      {message.messageType === 'audio' && message.type === 'user' ? (
-                        <div className="flex items-center gap-2">
-                          <Mic className="h-4 w-4" />
-                          <span className="text-sm italic">Mensaje de audio enviado</span>
-                        </div>
-                      ) : (
-                        <p className="whitespace-pre-wrap">{message.content}</p>
-                      )}
-                      <div className="text-xs opacity-70 mt-1">
-                        {message.timestamp.toLocaleTimeString()}
+    <div className="h-screen flex flex-col bg-background overflow-hidden">
+      {/* Header */}
+      <div className="flex-shrink-0 border-b border-border bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50">
+        <div className="flex items-center gap-2 p-4">
+          <Bot className="h-5 w-5 text-primary" />
+          <h1 className="text-lg font-semibold">Chat con Asistente IA</h1>
+        </div>
+      </div>
+      
+      {/* Messages Area */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.length === 0 ? (
+          <div className="text-center text-muted-foreground py-8 h-full flex flex-col items-center justify-center">
+            <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>¡Hola! Soy tu asistente de IA para consultas de base de datos.</p>
+            <p className="text-sm mt-2">Puedes escribir o hablar para hacer consultas.</p>
+          </div>
+        ) : (
+          <>
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div className={`flex gap-3 max-w-[80%] ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+                  <div className={`
+                    w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0
+                    ${message.type === 'user' ? 'bg-primary' : 'bg-secondary'}
+                  `}>
+                    {message.type === 'user' ? (
+                      <User className="h-4 w-4 text-primary-foreground" />
+                    ) : (
+                      <Bot className="h-4 w-4 text-secondary-foreground" />
+                    )}
+                  </div>
+                  <div className={`
+                    rounded-lg px-4 py-2 break-words
+                    ${message.type === 'user' 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'bg-secondary text-secondary-foreground'
+                    }
+                  `}>
+                    {message.messageType === 'audio' && message.type === 'user' ? (
+                      <div className="flex items-center gap-2">
+                        <Mic className="h-4 w-4" />
+                        <span className="text-sm italic">Mensaje de audio enviado</span>
                       </div>
+                    ) : (
+                      <div className="prose prose-sm max-w-none dark:prose-invert">
+                        <ReactMarkdown>{message.content}</ReactMarkdown>
+                      </div>
+                    )}
+                    <div className="text-xs opacity-70 mt-1">
+                      {message.timestamp.toLocaleTimeString()}
                     </div>
                   </div>
                 </div>
-              ))
-            )}
+              </div>
+            ))}
             
             {isLoading && (
               <div className="flex gap-3 justify-start">
@@ -253,61 +252,61 @@ export default function AIAssistant() {
             )}
             
             <div ref={messagesEndRef} />
-          </div>
+          </>
+        )}
+      </div>
 
-          {/* Input Area */}
-          <div className="border-t pt-4 mt-auto">
-            <div className="flex gap-2">
-              <Textarea
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Escribe tu consulta aquí..."
-                className="resize-none"
-                rows={2}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendText();
-                  }
-                }}
-                disabled={isLoading}
-                autoFocus
-              />
-              <div className="flex flex-col gap-2">
-                <Button
-                  onClick={handleSendText}
-                  disabled={!input.trim() || isLoading}
-                  size="icon"
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
-                <Button
-                  onClick={isRecording ? stopRecording : startRecording}
-                  disabled={isLoading}
-                  variant={isRecording ? "destructive" : "outline"}
-                  size="icon"
-                >
-                  {isRecording ? (
-                    <MicOff className="h-4 w-4" />
-                  ) : (
-                    <Mic className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-            </div>
-            
-            {isRecording && (
-              <div className="text-center mt-2">
-                <div className="flex items-center justify-center gap-2 text-destructive">
-                  <div className="w-2 h-2 bg-destructive rounded-full animate-pulse"></div>
-                  <span className="text-sm">Grabando... Haz clic en el micrófono para detener</span>
-                </div>
-              </div>
-            )}
+      {/* Input Area */}
+      <div className="flex-shrink-0 border-t border-border bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50 p-4">
+        <div className="flex gap-2">
+          <Textarea
+            ref={inputRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Escribe tu consulta aquí..."
+            className="resize-none"
+            rows={2}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSendText();
+              }
+            }}
+            disabled={isLoading}
+            autoFocus
+          />
+          <div className="flex flex-col gap-2">
+            <Button
+              onClick={handleSendText}
+              disabled={!input.trim() || isLoading}
+              size="icon"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+            <Button
+              onClick={isRecording ? stopRecording : startRecording}
+              disabled={isLoading}
+              variant={isRecording ? "destructive" : "outline"}
+              size="icon"
+            >
+              {isRecording ? (
+                <MicOff className="h-4 w-4" />
+              ) : (
+                <Mic className="h-4 w-4" />
+              )}
+            </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+        
+        {isRecording && (
+          <div className="text-center mt-2">
+            <div className="flex items-center justify-center gap-2 text-destructive">
+              <div className="w-2 h-2 bg-destructive rounded-full animate-pulse"></div>
+              <span className="text-sm">Grabando... Haz clic en el micrófono para detener</span>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

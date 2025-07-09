@@ -24,6 +24,7 @@ export default function AIAssistant() {
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-scroll cuando se añadan nuevos mensajes
   useEffect(() => {
@@ -114,6 +115,10 @@ export default function AIAssistant() {
       });
     } finally {
       setIsLoading(false);
+      // Auto-focus el input después de que termine la IA
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
     }
   };
 
@@ -172,15 +177,8 @@ export default function AIAssistant() {
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Asistente de IA - Base de Datos</h1>
-        <p className="text-muted-foreground mt-2">
-          Realiza consultas inteligentes a la base de datos usando texto o voz
-        </p>
-      </div>
-
-      <Card className="h-[700px] flex flex-col">
+    <div className="h-screen flex flex-col">
+      <Card className="flex-1 flex flex-col m-0 border-0 rounded-none shadow-none">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Bot className="h-5 w-5" />
@@ -190,7 +188,7 @@ export default function AIAssistant() {
         
         <CardContent className="flex-1 flex flex-col p-6">
           {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto mb-4 space-y-4 pr-2 scroll-smooth max-h-[500px]">
+          <div className="flex-1 overflow-y-auto mb-4 space-y-4 pr-2 scroll-smooth">
             {messages.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">
                 <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -261,6 +259,7 @@ export default function AIAssistant() {
           <div className="border-t pt-4 mt-auto">
             <div className="flex gap-2">
               <Textarea
+                ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Escribe tu consulta aquí..."
@@ -273,6 +272,7 @@ export default function AIAssistant() {
                   }
                 }}
                 disabled={isLoading}
+                autoFocus
               />
               <div className="flex flex-col gap-2">
                 <Button

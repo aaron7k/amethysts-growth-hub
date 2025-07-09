@@ -512,7 +512,7 @@ export default function NewSale() {
       <div className="text-center">
         <h1 className="text-3xl font-bold text-foreground flex items-center justify-center gap-3">
           <UserPlus className="h-8 w-8 text-primary" />
-          Nueva Venta
+          Registrar Pago
         </h1>
         <p className="text-muted-foreground mt-2">
           Crea una nueva suscripción paso a paso
@@ -565,7 +565,7 @@ export default function NewSale() {
               disabled={!canSubmit || createSaleMutation.isPending}
               className="amethyst-gradient hover:opacity-90"
             >
-              {createSaleMutation.isPending ? 'Creando...' : 'Crear Venta'}
+              {createSaleMutation.isPending ? 'Registrando...' : 'Registrar Pago'}
             </Button>
           )}
         </div>

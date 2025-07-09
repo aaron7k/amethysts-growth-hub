@@ -61,6 +61,108 @@ export type Database = {
           },
         ]
       }
+      accelerator_onboarding_checklist: {
+        Row: {
+          academy_access_granted: boolean | null
+          academy_access_granted_at: string | null
+          academy_access_granted_by: string | null
+          client_id: string
+          completed_at: string | null
+          contract_sent: boolean | null
+          contract_sent_at: string | null
+          contract_sent_by: string | null
+          created_at: string
+          discord_groups_created: boolean | null
+          discord_groups_created_at: string | null
+          discord_groups_created_by: string | null
+          document_sent: boolean | null
+          document_sent_at: string | null
+          document_sent_by: string | null
+          highlevel_subccount_created: boolean | null
+          highlevel_subccount_created_at: string | null
+          highlevel_subccount_created_by: string | null
+          id: string
+          is_completed: boolean | null
+          notes: string | null
+          onboarding_meeting_scheduled: boolean | null
+          onboarding_meeting_scheduled_at: string | null
+          onboarding_meeting_scheduled_by: string | null
+          subscription_id: string
+          updated_at: string
+        }
+        Insert: {
+          academy_access_granted?: boolean | null
+          academy_access_granted_at?: string | null
+          academy_access_granted_by?: string | null
+          client_id: string
+          completed_at?: string | null
+          contract_sent?: boolean | null
+          contract_sent_at?: string | null
+          contract_sent_by?: string | null
+          created_at?: string
+          discord_groups_created?: boolean | null
+          discord_groups_created_at?: string | null
+          discord_groups_created_by?: string | null
+          document_sent?: boolean | null
+          document_sent_at?: string | null
+          document_sent_by?: string | null
+          highlevel_subccount_created?: boolean | null
+          highlevel_subccount_created_at?: string | null
+          highlevel_subccount_created_by?: string | null
+          id?: string
+          is_completed?: boolean | null
+          notes?: string | null
+          onboarding_meeting_scheduled?: boolean | null
+          onboarding_meeting_scheduled_at?: string | null
+          onboarding_meeting_scheduled_by?: string | null
+          subscription_id: string
+          updated_at?: string
+        }
+        Update: {
+          academy_access_granted?: boolean | null
+          academy_access_granted_at?: string | null
+          academy_access_granted_by?: string | null
+          client_id?: string
+          completed_at?: string | null
+          contract_sent?: boolean | null
+          contract_sent_at?: string | null
+          contract_sent_by?: string | null
+          created_at?: string
+          discord_groups_created?: boolean | null
+          discord_groups_created_at?: string | null
+          discord_groups_created_by?: string | null
+          document_sent?: boolean | null
+          document_sent_at?: string | null
+          document_sent_by?: string | null
+          highlevel_subccount_created?: boolean | null
+          highlevel_subccount_created_at?: string | null
+          highlevel_subccount_created_by?: string | null
+          id?: string
+          is_completed?: boolean | null
+          notes?: string | null
+          onboarding_meeting_scheduled?: boolean | null
+          onboarding_meeting_scheduled_at?: string | null
+          onboarding_meeting_scheduled_by?: string | null
+          subscription_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_client"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_subscription"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       accelerator_programs: {
         Row: {
           created_at: string

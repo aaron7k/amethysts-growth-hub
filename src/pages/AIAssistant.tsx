@@ -276,7 +276,14 @@ export default function AIAssistant() {
                       </div>
                     ) : (
                       <div className="prose prose-sm max-w-none dark:prose-invert">
-                        <ReactMarkdown>{message.content}</ReactMarkdown>
+                        <ReactMarkdown
+                          components={{
+                            p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                            br: () => <br />,
+                          }}
+                        >
+                          {message.content.replace(/\n/g, '  \n')}
+                        </ReactMarkdown>
                       </div>
                     )}
                     <div className="text-xs opacity-70 mt-1">

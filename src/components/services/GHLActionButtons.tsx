@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Power, ExternalLink } from "lucide-react";
 import { useGHLActions } from "@/hooks/useGHLActions";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import { GHLDetailsModal } from "./GHLDetailsModal";
 
 interface GHLActionButtonsProps {
@@ -21,8 +22,10 @@ interface GHLActionButtonsProps {
 
 export const GHLActionButtons = ({ service }: GHLActionButtonsProps) => {
   const ghlActionMutation = useGHLActions();
+  const { data: userProfile } = useUserProfile();
   const details = service.access_details as any;
   const isGHLActive = service.is_active === true;
+  const isSuperAdmin = userProfile?.super_admin === true;
 
   return (
     <div className="flex gap-2 flex-wrap">
@@ -37,73 +40,75 @@ export const GHLActionButtons = ({ service }: GHLActionButtonsProps) => {
           Ir a Cuenta
         </Button>
       )}
-      {isGHLActive ? (
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button
-              size="sm"
-              variant="destructive"
-              disabled={ghlActionMutation.isPending}
-            >
-              <Power className="h-4 w-4 mr-1" />
-              Apagar
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>¿Apagar subcuenta?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Esta acción apagará la subcuenta de GoHighLevel para {service.subscription?.client?.full_name}. 
-                ¿Estás seguro de que deseas continuar?
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => ghlActionMutation.mutate({ 
-                  serviceId: details?.id, 
-                  action: 'apagar' 
-                })}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+      {isSuperAdmin && (
+        isGHLActive ? (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                size="sm"
+                variant="destructive"
+                disabled={ghlActionMutation.isPending}
               >
+                <Power className="h-4 w-4 mr-1" />
                 Apagar
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      ) : (
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={ghlActionMutation.isPending}
-            >
-              <Power className="h-4 w-4 mr-1" />
-              Encender
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>¿Encender subcuenta?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Esta acción encenderá la subcuenta de GoHighLevel para {service.subscription?.client?.full_name}. 
-                ¿Continuar?
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => ghlActionMutation.mutate({ 
-                  serviceId: details?.id, 
-                  action: 'encender' 
-                })}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>¿Apagar subcuenta?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Esta acción apagará la subcuenta de GoHighLevel para {service.subscription?.client?.full_name}. 
+                  ¿Estás seguro de que deseas continuar?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => ghlActionMutation.mutate({ 
+                    serviceId: details?.id, 
+                    action: 'apagar' 
+                  })}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Apagar
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        ) : (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={ghlActionMutation.isPending}
               >
+                <Power className="h-4 w-4 mr-1" />
                 Encender
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>¿Encender subcuenta?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Esta acción encenderá la subcuenta de GoHighLevel para {service.subscription?.client?.full_name}. 
+                  ¿Continuar?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => ghlActionMutation.mutate({ 
+                    serviceId: details?.id, 
+                    action: 'encender' 
+                  })}
+                >
+                  Encender
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )
       )}
     </div>
   );

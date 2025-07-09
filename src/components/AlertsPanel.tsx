@@ -7,7 +7,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
-import { Bell, Clock, AlertTriangle, CheckCircle, X, CheckCheck } from "lucide-react"
+import { Bell, Clock, AlertTriangle, CheckCircle, X, CheckCheck, History } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 
@@ -23,10 +23,15 @@ interface Alert {
   message: string
   status: string
   created_at: string
+  sent_at?: string
   client_id?: string
   subscription_id?: string
   installment_id?: string
   clients?: {
+    full_name: string
+    email: string
+  }
+  completed_by_profile?: {
     full_name: string
     email: string
   }
@@ -35,11 +40,12 @@ interface Alert {
 export function AlertsPanel({ open, onOpenChange }: AlertsPanelProps) {
   const { toast } = useToast()
   const queryClient = useQueryClient()
+  const [showPastAlerts, setShowPastAlerts] = useState(false)
 
   const { data: alerts, isLoading } = useQuery({
-    queryKey: ['alerts'],
+    queryKey: ['alerts', showPastAlerts],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('alerts')
         .select(`
           *,
@@ -48,7 +54,14 @@ export function AlertsPanel({ open, onOpenChange }: AlertsPanelProps) {
             email
           )
         `)
-        .eq('status', 'pending')
+
+      if (showPastAlerts) {
+        query = query.eq('status', 'sent')
+      } else {
+        query = query.eq('status', 'pending')
+      }
+
+      const { data, error } = await query
         .order('created_at', { ascending: false })
         .limit(20)
 
@@ -193,12 +206,31 @@ export function AlertsPanel({ open, onOpenChange }: AlertsPanelProps) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Bell className="h-5 w-5" />
-            Alertas ({pendingAlerts.length} pendientes)
+            {showPastAlerts ? 'Alertas Pasadas' : `Alertas (${pendingAlerts.length} pendientes)`}
           </DialogTitle>
         </DialogHeader>
         
-        {pendingAlerts.length > 0 && (
-          <div className="flex justify-end mb-4">
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex gap-2">
+            <Button 
+              variant={!showPastAlerts ? "default" : "outline"} 
+              size="sm"
+              onClick={() => setShowPastAlerts(false)}
+            >
+              <Bell className="h-4 w-4 mr-2" />
+              Pendientes
+            </Button>
+            <Button 
+              variant={showPastAlerts ? "default" : "outline"} 
+              size="sm"
+              onClick={() => setShowPastAlerts(true)}
+            >
+              <History className="h-4 w-4 mr-2" />
+              Completadas
+            </Button>
+          </div>
+          
+          {!showPastAlerts && pendingAlerts.length > 0 && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button 
@@ -225,8 +257,8 @@ export function AlertsPanel({ open, onOpenChange }: AlertsPanelProps) {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-          </div>
-        )}
+          )}
+        </div>
         
         <ScrollArea className="h-96">
           <div className="space-y-4">
@@ -282,8 +314,14 @@ export function AlertsPanel({ open, onOpenChange }: AlertsPanelProps) {
                   </div>
                 )}
 
+                {alert.status === 'sent' && alert.sent_at && (
+                  <div className="text-xs text-muted-foreground">
+                    Completada el: {format(new Date(alert.sent_at), "dd 'de' MMMM 'a las' HH:mm", { locale: es })}
+                  </div>
+                )}
+
                 <div className="text-xs text-muted-foreground">
-                  {format(new Date(alert.created_at), "dd 'de' MMMM 'a las' HH:mm", { locale: es })}
+                  Creada el: {format(new Date(alert.created_at), "dd 'de' MMMM 'a las' HH:mm", { locale: es })}
                 </div>
               </div>
             ))}

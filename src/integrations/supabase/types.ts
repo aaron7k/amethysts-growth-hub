@@ -303,6 +303,7 @@ export type Database = {
         Row: {
           alert_type: Database["public"]["Enums"]["alert_type"]
           client_id: string | null
+          completed_by: string | null
           created_at: string
           id: string
           installment_id: string | null
@@ -319,6 +320,7 @@ export type Database = {
         Insert: {
           alert_type: Database["public"]["Enums"]["alert_type"]
           client_id?: string | null
+          completed_by?: string | null
           created_at?: string
           id?: string
           installment_id?: string | null
@@ -335,6 +337,7 @@ export type Database = {
         Update: {
           alert_type?: Database["public"]["Enums"]["alert_type"]
           client_id?: string | null
+          completed_by?: string | null
           created_at?: string
           id?: string
           installment_id?: string | null

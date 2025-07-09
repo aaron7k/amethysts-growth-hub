@@ -76,13 +76,28 @@ serve(async (req) => {
       throw new Error(`n8n webhook failed with status: ${webhookResponse.status}`)
     }
 
+    // Obtener el usuario autenticado desde el JWT token
+    const authHeader = req.headers.get('Authorization')
+    let userId = null
+    
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const jwt = authHeader.replace('Bearer ', '')
+        const { data: { user } } = await supabaseClient.auth.getUser(jwt)
+        userId = user?.id
+      } catch (error) {
+        console.warn('Could not extract user from token:', error)
+      }
+    }
+
     // Actualizar el estado de la alerta
     const { error: updateError } = await supabaseClient
       .from('alerts')
       .update({ 
         status: 'sent', 
         sent_at: new Date().toISOString(),
-        webhook_url: n8nWebhook
+        webhook_url: n8nWebhook,
+        completed_by: userId
       })
       .eq('id', alertId)
 

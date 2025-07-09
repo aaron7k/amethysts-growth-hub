@@ -176,9 +176,9 @@ export default function Clients() {
 
   const getClientTypeLabel = (type: string) => {
     const labels = {
-      'client': 'Cliente',
-      'student': 'Alumno',
-      'accelerator_member': 'Miembro Aceleradora'
+      'client': 'Socio B2B',
+      'student': 'Alumno Academia',
+      'accelerator_member': 'Alumno Accelerator'
     }
     return labels[type as keyof typeof labels] || type
   }
@@ -186,8 +186,8 @@ export default function Clients() {
   const getClientTypeBadgeColor = (type: string) => {
     const colors = {
       'client': 'bg-blue-100 text-blue-800',
-      'student': 'bg-green-100 text-green-800',
-      'accelerator_member': 'bg-purple-100 text-purple-800'
+      'student': 'bg-violet-100 text-violet-800',
+      'accelerator_member': 'bg-yellow-100 text-yellow-800'
     }
     return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800'
   }
@@ -232,9 +232,9 @@ export default function Clients() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos los tipos</SelectItem>
-                <SelectItem value="client">Clientes</SelectItem>
-                <SelectItem value="student">Alumnos</SelectItem>
-                <SelectItem value="accelerator_member">Miembro Aceleradora</SelectItem>
+                <SelectItem value="client">Socio B2B</SelectItem>
+                <SelectItem value="student">Alumno Academia</SelectItem>
+                <SelectItem value="accelerator_member">Alumno Accelerator</SelectItem>
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -450,9 +450,9 @@ export default function Clients() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="client">Cliente</SelectItem>
-                        <SelectItem value="student">Alumno</SelectItem>
-                        <SelectItem value="accelerator_member">Miembro Aceleradora</SelectItem>
+                        <SelectItem value="client">Socio B2B</SelectItem>
+                        <SelectItem value="student">Alumno Academia</SelectItem>
+                        <SelectItem value="accelerator_member">Alumno Accelerator</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

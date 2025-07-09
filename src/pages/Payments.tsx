@@ -823,7 +823,7 @@ export default function Payments() {
           form.reset()
         }
       }}>
-        <DialogContent className="sm:max-w-[500px] max-h-[85vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[500px] max-h-[85vh] overflow-y-auto pointer-events-auto">
           <DialogHeader>
             <DialogTitle>{editingPayment ? 'Editar Pago' : 'Crear Nuevo Pago'}</DialogTitle>
             <DialogDescription>
@@ -859,7 +859,7 @@ export default function Payments() {
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
-                      <PopoverContent className="w-[400px] p-0">
+                      <PopoverContent className="w-[400px] p-0 pointer-events-auto">
                         <Command>
                           <CommandInput placeholder="Buscar suscripción..." />
                           <CommandList>

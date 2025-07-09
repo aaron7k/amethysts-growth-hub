@@ -660,7 +660,7 @@ const Accelerator = () => {
   }
 
   if (showTemplateManager) {
-    return <ChecklistTemplateManager />
+    return <ChecklistTemplateManager onBack={() => setShowTemplateManager(false)} />
   }
 
   if (showOnboarding) {
@@ -941,64 +941,6 @@ const Accelerator = () => {
             <Settings className="mr-2 h-4 w-4" />
             Configurar Checklists
           </Button>
-          
-          <Dialog open={newProgramOpen} onOpenChange={setNewProgramOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Users className="mr-2 h-4 w-4" />
-                Nuevo Programa
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Crear Nuevo Programa</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="subscription">Cliente</Label>
-                  {subscriptionsLoading ? (
-                    <div className="text-sm text-muted-foreground">Cargando clientes...</div>
-                  ) : availableSubscriptions && availableSubscriptions.length > 0 ? (
-                    <Select value={selectedSubscription} onValueChange={setSelectedSubscription}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar cliente" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableSubscriptions.map((sub) => (
-                          <SelectItem key={sub.id} value={sub.id}>
-                            {sub.clients?.full_name} - {sub.plans?.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <div className="text-sm text-muted-foreground">
-                      No hay clientes con planes de Accelerator Program disponibles
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="start-date">Fecha de Inicio</Label>
-                  <Input
-                    id="start-date"
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                  />
-                </div>
-                <Button 
-                  onClick={() => createProgramMutation.mutate({ 
-                    subscriptionId: selectedSubscription, 
-                    startDate 
-                  })}
-                  disabled={!selectedSubscription || !startDate || createProgramMutation.isPending}
-                  className="w-full"
-                >
-                  {createProgramMutation.isPending ? 'Creando...' : 'Crear Programa'}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
         </div>
       </div>
 

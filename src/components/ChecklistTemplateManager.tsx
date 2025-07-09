@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Settings, Plus, Edit, Trash2 } from "lucide-react"
+import { Settings, Plus, Edit, Trash2, ArrowLeft } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { useState } from "react"
 
@@ -23,7 +23,7 @@ interface ChecklistTemplate {
   is_active: boolean
 }
 
-const ChecklistTemplateManager = () => {
+const ChecklistTemplateManager = ({ onBack }: { onBack?: () => void }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingTemplate, setEditingTemplate] = useState<ChecklistTemplate | null>(null)
   const [formData, setFormData] = useState({
@@ -179,14 +179,26 @@ const ChecklistTemplateManager = () => {
   return (
     <div className="p-6">
       <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Settings className="h-6 w-6" />
-            Configuración de Checklists
-          </h1>
-          <p className="text-muted-foreground">
-            Gestiona los elementos del checklist para cada etapa
-          </p>
+        <div className="flex items-center gap-4">
+          {onBack && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onBack}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Volver
+            </Button>
+          )}
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <Settings className="h-6 w-6" />
+              Configuración de Checklists
+            </h1>
+            <p className="text-muted-foreground">
+              Gestiona los elementos del checklist para cada etapa
+            </p>
+          </div>
         </div>
         
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

@@ -9,12 +9,15 @@ import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
-import { CreditCard, Search, Filter, CheckCircle, DollarSign, Edit, Trash2, Plus, Calendar, FileText } from "lucide-react"
+import { CreditCard, Search, Filter, CheckCircle, DollarSign, Edit, Trash2, Plus, Calendar, FileText, Check, ChevronsUpDown } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
+import { cn } from "@/lib/utils"
 
 type InstallmentStatus = 'pending' | 'paid' | 'overdue'
 type PaymentMethod = 'crypto' | 'stripe' | 'bank_transfer' | 'paypal' | 'bbva' | 'dolar_app' | 'payoneer' | 'cash' | 'binance' | 'mercado_pago'
@@ -42,6 +45,7 @@ export default function Payments() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [paymentToDelete, setPaymentToDelete] = useState<any>(null)
   const [activeTab, setActiveTab] = useState("payments")
+  const [openSubscriptionCombobox, setOpenSubscriptionCombobox] = useState(false)
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
@@ -834,33 +838,68 @@ export default function Payments() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Suscripción</FormLabel>
-                    <Select onValueChange={(value) => {
-                      field.onChange(value)
-                      // Auto-calculate due date when subscription changes
-                      const installmentNumber = parseInt(form.getValues('installment_number')) || 1
-                      const dueDate = calculateDueDate(value, installmentNumber)
-                      if (dueDate) {
-                        form.setValue('due_date', dueDate)
-                      }
-                    }} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecciona una suscripción" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {subscriptions?.map((subscription) => (
-                          <SelectItem key={subscription.id} value={subscription.id}>
-                            <div className="flex flex-col">
-                              <span>{subscription.clients?.full_name} - {subscription.plans?.name}</span>
-                              <span className="text-xs text-muted-foreground">
-                                Total: ${subscription.total_cost_usd?.toLocaleString()}
-                              </span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Popover open={openSubscriptionCombobox} onOpenChange={setOpenSubscriptionCombobox}>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={openSubscriptionCombobox}
+                            className={cn(
+                              "w-full justify-between",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value
+                              ? subscriptions?.find((subscription) => subscription.id === field.value)
+                                ? `${subscriptions.find((subscription) => subscription.id === field.value)?.clients?.full_name} - ${subscriptions.find((subscription) => subscription.id === field.value)?.plans?.name}`
+                                : "Selecciona una suscripción"
+                              : "Selecciona una suscripción"}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[400px] p-0">
+                        <Command>
+                          <CommandInput placeholder="Buscar suscripción..." />
+                          <CommandList>
+                            <CommandEmpty>No se encontraron suscripciones.</CommandEmpty>
+                            <CommandGroup>
+                              {subscriptions?.map((subscription) => (
+                                <CommandItem
+                                  key={subscription.id}
+                                  value={`${subscription.clients?.full_name} ${subscription.clients?.email} ${subscription.plans?.name}`}
+                                  onSelect={() => {
+                                    field.onChange(subscription.id)
+                                    setOpenSubscriptionCombobox(false)
+                                    // Auto-calculate due date when subscription changes
+                                    const installmentNumber = parseInt(form.getValues('installment_number')) || 1
+                                    const dueDate = calculateDueDate(subscription.id, installmentNumber)
+                                    if (dueDate) {
+                                      form.setValue('due_date', dueDate)
+                                    }
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      subscription.id === field.value
+                                        ? "opacity-100"
+                                        : "opacity-0"
+                                    )}
+                                  />
+                                  <div className="flex flex-col">
+                                    <span className="font-medium">{subscription.clients?.full_name}</span>
+                                    <span className="text-sm text-muted-foreground">{subscription.clients?.email}</span>
+                                    <span className="text-sm">{subscription.plans?.name} - ${subscription.total_cost_usd?.toLocaleString()}</span>
+                                  </div>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                     <FormMessage />
                   </FormItem>
                 )}

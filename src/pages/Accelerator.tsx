@@ -1,21 +1,24 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { Calendar, Clock, CheckCircle, AlertTriangle, Target, Users, Settings, Play, CalendarPlus } from "lucide-react"
+import { Calendar, Clock, CheckCircle, AlertTriangle, Target, Users, Settings, Play, CalendarPlus, UserCheck, FileText, Filter } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Textarea } from "@/components/ui/textarea"
 import { useState } from "react"
 import StageChecklist from "@/components/StageChecklist"
 import ChecklistTemplateManager from "@/components/ChecklistTemplateManager"
 import DiscordChannelManager from "@/components/DiscordChannelManager"
 import AcceleratorMessageManager from "@/components/AcceleratorMessageManager"
+import { useUserProfile } from "@/hooks/useUserProfile"
 
 interface AcceleratorProgram {
   id: string
@@ -52,6 +55,39 @@ interface AcceleratorStage {
   is_activated: boolean
 }
 
+const CHECKLIST_ITEMS = [
+  { 
+    key: 'document_sent', 
+    label: 'Enviar Documento de Onboarding por Mail',
+    description: 'Envío del documento oficial de onboarding'
+  },
+  { 
+    key: 'academy_access_granted', 
+    label: 'Acceso a Accelerator (ACADEMIA ACCELERATOR)',
+    description: 'Otorgar acceso a la plataforma de academia'
+  },
+  { 
+    key: 'contract_sent', 
+    label: 'Envío de contrato estandarizado',
+    description: 'Enviar contrato oficial del programa'
+  },
+  { 
+    key: 'highlevel_subccount_created', 
+    label: 'Creación de subcuenta de high-level',
+    description: 'Configurar subcuenta en HighLevel'
+  },
+  { 
+    key: 'discord_groups_created', 
+    label: 'Creación automática de grupos privados de Discord',
+    description: 'Crear grupos privados en Discord'
+  },
+  { 
+    key: 'onboarding_meeting_scheduled', 
+    label: 'Agendar reunión de Onboarding 1:1 con Martín explicando el proceso de la Etapa 1',
+    description: 'Programar sesión inicial con Martín'
+  }
+]
+
 const Accelerator = () => {
   const [selectedProgram, setSelectedProgram] = useState<string | null>(null)
   const [newProgramOpen, setNewProgramOpen] = useState(false)
@@ -60,7 +96,15 @@ const Accelerator = () => {
   const [showTemplateManager, setShowTemplateManager] = useState(false)
   const [activateStagesOpen, setActivateStagesOpen] = useState(false)
   const [selectedProgramForActivation, setSelectedProgramForActivation] = useState<AcceleratorProgram | null>(null)
+  
+  // Onboarding states
+  const [selectedChecklistId, setSelectedChecklistId] = useState<string>('')
+  const [onboardingNotes, setOnboardingNotes] = useState('')
+  const [statusFilter, setStatusFilter] = useState<string>('pending')
+  const [showOnboarding, setShowOnboarding] = useState(false)
+  
   const queryClient = useQueryClient()
+  const { data: userProfile } = useUserProfile()
 
   // Obtener programas de aceleradora
   const { data: programs, isLoading: programsLoading } = useQuery({
@@ -189,6 +233,96 @@ const Accelerator = () => {
       return data as AcceleratorStage[]
     },
     enabled: !!selectedProgramForActivation
+  })
+
+  // Fetch accelerator onboarding checklists
+  const { data: checklists } = useQuery({
+    queryKey: ['accelerator-onboarding-checklists', statusFilter],
+    queryFn: async () => {
+      let query = supabase
+        .from('accelerator_onboarding_checklist')
+        .select(`
+          *,
+          clients(full_name, email, phone_number),
+          subscriptions(
+            id,
+            start_date,
+            end_date,
+            status,
+            plans(name, plan_type)
+          )
+        `)
+        .order('created_at', { ascending: false })
+
+      if (statusFilter === 'pending') {
+        query = query.eq('is_completed', false)
+      } else if (statusFilter === 'completed') {
+        query = query.eq('is_completed', true)
+      }
+
+      const { data, error } = await query
+      if (error) throw error
+      return data
+    }
+  })
+
+  // Update checklist item
+  const updateChecklistMutation = useMutation({
+    mutationFn: async (data: {
+      id: string
+      field: string
+      value: boolean
+      completedBy?: string
+    }) => {
+      const updateData: any = {
+        [data.field]: data.value,
+        updated_at: new Date().toISOString()
+      }
+
+      if (data.value && data.completedBy) {
+        updateData[`${data.field}_at`] = new Date().toISOString()
+        updateData[`${data.field}_by`] = data.completedBy
+      } else if (!data.value) {
+        updateData[`${data.field}_at`] = null
+        updateData[`${data.field}_by`] = null
+      }
+
+      const { error } = await supabase
+        .from('accelerator_onboarding_checklist')
+        .update(updateData)
+        .eq('id', data.id)
+
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['accelerator-onboarding-checklists'] })
+    }
+  })
+
+  // Complete entire checklist
+  const completeChecklistMutation = useMutation({
+    mutationFn: async (data: { id: string, notes?: string }) => {
+      const { error } = await supabase
+        .from('accelerator_onboarding_checklist')
+        .update({
+          is_completed: true,
+          completed_at: new Date().toISOString(),
+          notes: data.notes,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', data.id)
+
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['accelerator-onboarding-checklists'] })
+      toast({
+        title: "Onboarding completado",
+        description: "El onboarding del cliente ha sido marcado como completado."
+      })
+      setSelectedChecklistId('')
+      setOnboardingNotes('')
+    }
   })
 
   // Crear nuevo programa
@@ -478,8 +612,309 @@ const Accelerator = () => {
     { number: 4, name: "Post-Meta", description: "Escalamiento y optimización" }
   ]
 
+  // Onboarding helper functions
+  const selectedChecklist = checklists?.find(c => c.id === selectedChecklistId)
+
+  const handleItemToggle = (field: string, value: boolean) => {
+    if (!selectedChecklist) return
+    
+    updateChecklistMutation.mutate({
+      id: selectedChecklist.id,
+      field,
+      value,
+      completedBy: userProfile?.full_name || userProfile?.email || 'Usuario'
+    })
+  }
+
+  const isAllItemsCompleted = (checklist: any) => {
+    return CHECKLIST_ITEMS.every(item => checklist[item.key])
+  }
+
+  const getCompletedCount = (checklist: any) => {
+    return CHECKLIST_ITEMS.filter(item => checklist[item.key]).length
+  }
+
+  const handleCompleteOnboarding = () => {
+    if (!selectedChecklist) return
+    
+    if (!isAllItemsCompleted(selectedChecklist)) {
+      toast({
+        title: "Tareas pendientes",
+        description: "Debes completar todas las tareas antes de finalizar el onboarding.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    completeChecklistMutation.mutate({
+      id: selectedChecklist.id,
+      notes: onboardingNotes
+    })
+  }
+
+  // Get onboarding status for a program
+  const getOnboardingStatus = (programSubscriptionId: string) => {
+    return checklists?.find(c => c.subscription_id === programSubscriptionId)
+  }
+
   if (showTemplateManager) {
     return <ChecklistTemplateManager />
+  }
+
+  if (showOnboarding) {
+    return (
+      <div className="space-y-6 p-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
+              <UserCheck className="h-8 w-8 text-primary" />
+              Onboarding Accelerator
+            </h1>
+            <p className="text-muted-foreground mt-2">
+              Gestión del checklist de onboarding para alumnos del programa Accelerator
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setShowOnboarding(false)}>
+              Volver a Aceleradora
+            </Button>
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pending">Pendientes</SelectItem>
+                <SelectItem value="completed">Completados</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Checklists List */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-primary" />
+                Alumnos Accelerator
+              </CardTitle>
+              <CardDescription>
+                {checklists?.length || 0} alumno(s) encontrado(s)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {checklists?.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500" />
+                  <p>No hay alumnos con el filtro seleccionado.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {checklists?.map((checklist) => (
+                    <div 
+                      key={checklist.id} 
+                      className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                        selectedChecklistId === checklist.id 
+                          ? 'border-primary bg-primary/5' 
+                          : 'border-border hover:bg-muted/50'
+                      }`}
+                      onClick={() => setSelectedChecklistId(checklist.id)}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h4 className="font-semibold">{checklist.clients?.full_name}</h4>
+                          <p className="text-sm text-muted-foreground">
+                            {checklist.clients?.email}
+                          </p>
+                        </div>
+                        <Badge 
+                          variant={checklist.is_completed ? "default" : "secondary"}
+                          className={checklist.is_completed ? "bg-green-100 text-green-800" : ""}
+                        >
+                          {checklist.is_completed ? 'Completado' : 'Pendiente'}
+                        </Badge>
+                      </div>
+                      <div className="text-sm">
+                        <p className="font-medium">{checklist.subscriptions?.plans?.name}</p>
+                        <div className="flex justify-between items-center mt-2">
+                          <p className="text-muted-foreground">
+                            Inicio: {new Date(checklist.subscriptions?.start_date || '').toLocaleDateString()}
+                          </p>
+                          <span className="text-xs bg-muted px-2 py-1 rounded">
+                            {getCompletedCount(checklist)}/{CHECKLIST_ITEMS.length}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Onboarding Checklist */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-primary" />
+                Checklist de Onboarding
+              </CardTitle>
+              <CardDescription>
+                {selectedChecklist ? 
+                  `${selectedChecklist.clients?.full_name} - ${getCompletedCount(selectedChecklist)}/${CHECKLIST_ITEMS.length} completadas` : 
+                  'Selecciona un alumno para ver su checklist'
+                }
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {!selectedChecklist ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <UserCheck className="h-12 w-12 mx-auto mb-4" />
+                  <p>Selecciona un alumno de la lista para gestionar su onboarding</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Client Info */}
+                  <div className="p-4 bg-muted/30 rounded-lg">
+                    <h4 className="font-semibold mb-2">{selectedChecklist.clients?.full_name}</h4>
+                    <div className="grid grid-cols-1 gap-2 text-sm">
+                      <p><strong>Email:</strong> {selectedChecklist.clients?.email}</p>
+                      {selectedChecklist.clients?.phone_number && (
+                        <p><strong>Teléfono:</strong> {selectedChecklist.clients?.phone_number}</p>
+                      )}
+                      <p><strong>Plan:</strong> {selectedChecklist.subscriptions?.plans?.name}</p>
+                      <p><strong>Fecha de inicio:</strong> {new Date(selectedChecklist.subscriptions?.start_date || '').toLocaleDateString()}</p>
+                      {selectedChecklist.is_completed && (
+                        <p><strong>Completado:</strong> {new Date(selectedChecklist.completed_at || '').toLocaleDateString()}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Checklist Items */}
+                  <div className="space-y-4">
+                    <h4 className="font-semibold">Tareas del Onboarding</h4>
+                    {CHECKLIST_ITEMS.map((item) => {
+                      const isCompleted = selectedChecklist[item.key]
+                      const completedAt = selectedChecklist[`${item.key}_at`]
+                      const completedBy = selectedChecklist[`${item.key}_by`]
+                      
+                      return (
+                        <div key={item.key} className="border rounded-lg p-4">
+                          <div className="flex items-start space-x-3">
+                            <Checkbox
+                              id={item.key}
+                              checked={isCompleted || false}
+                              onCheckedChange={(checked) => handleItemToggle(item.key, checked as boolean)}
+                              disabled={selectedChecklist.is_completed}
+                            />
+                            <div className="flex-1">
+                              <label 
+                                htmlFor={item.key} 
+                                className={`text-sm font-medium cursor-pointer block ${
+                                  isCompleted ? 'text-green-600' : 'text-foreground'
+                                }`}
+                              >
+                                {item.label}
+                              </label>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {item.description}
+                              </p>
+                              {isCompleted && completedAt && (
+                                <div className="mt-2 text-xs text-green-600">
+                                  ✓ Completado el {new Date(completedAt).toLocaleDateString()}
+                                  {completedBy && ` por ${completedBy}`}
+                                </div>
+                              )}
+                            </div>
+                            {isCompleted && (
+                              <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {/* Notes */}
+                  {!selectedChecklist.is_completed && (
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">
+                        Notas del Onboarding
+                      </label>
+                      <Textarea
+                        value={onboardingNotes}
+                        onChange={(e) => setOnboardingNotes(e.target.value)}
+                        placeholder="Agrega notas sobre el proceso de onboarding..."
+                        rows={3}
+                      />
+                    </div>
+                  )}
+
+                  {/* Show existing notes if completed */}
+                  {selectedChecklist.is_completed && selectedChecklist.notes && (
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">
+                        Notas del Onboarding
+                      </label>
+                      <div className="p-3 bg-muted/30 rounded text-sm">
+                        {selectedChecklist.notes}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  {!selectedChecklist.is_completed && (
+                    <div className="flex flex-col gap-2">
+                      <Button
+                        onClick={handleCompleteOnboarding}
+                        disabled={completeChecklistMutation.isPending || !isAllItemsCompleted(selectedChecklist)}
+                        className="w-full"
+                      >
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Finalizar Onboarding
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Completed badge */}
+                  {selectedChecklist.is_completed && (
+                    <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+                      <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-600" />
+                      <p className="text-green-800 font-medium">Onboarding Completado</p>
+                      <p className="text-green-600 text-sm">
+                        Finalizado el {new Date(selectedChecklist.completed_at || '').toLocaleDateString()}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Progress Indicator */}
+                  <div className="pt-4 border-t">
+                    <div className="flex justify-between text-sm text-muted-foreground mb-2">
+                      <span>Progreso</span>
+                      <span>
+                        {getCompletedCount(selectedChecklist)} / {CHECKLIST_ITEMS.length}
+                      </span>
+                    </div>
+                    <div className="w-full bg-muted rounded-full h-2">
+                      <div 
+                        className="bg-primary h-2 rounded-full transition-all duration-300"
+                        style={{
+                          width: `${(getCompletedCount(selectedChecklist) / CHECKLIST_ITEMS.length) * 100}%`
+                        }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
   }
 
   if (programsLoading) {
@@ -754,16 +1189,26 @@ const Accelerator = () => {
                   >
                     {selectedProgram === program.subscription_id ? 'Ocultar' : 'Ver'} Detalle
                   </Button>
-                  {!program.goal_reached && (
-                    <Button
-                      size="sm"
-                      onClick={() => markGoalReached(program.id)}
-                      className="bg-green-600 hover:bg-green-700"
-                    >
-                      <Target className="mr-1 h-3 w-3" />
-                      Marcar Meta
-                    </Button>
-                  )}
+                  
+                  {/* Onboarding Button */}
+                  {(() => {
+                    const onboardingStatus = getOnboardingStatus(program.subscription_id)
+                    const isCompleted = onboardingStatus?.is_completed || false
+                    
+                    return (
+                      <Button
+                        size="sm"
+                        onClick={() => setShowOnboarding(true)}
+                        className={isCompleted ? 
+                          "bg-gray-400 hover:bg-gray-500 text-gray-700" : 
+                          "bg-green-600 hover:bg-green-700 text-white"
+                        }
+                      >
+                        <UserCheck className="mr-1 h-3 w-3" />
+                        Onboarding
+                      </Button>
+                    )
+                  })()}
                 </div>
               </div>
 

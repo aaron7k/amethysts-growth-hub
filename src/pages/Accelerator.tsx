@@ -1198,10 +1198,25 @@ const Accelerator = () => {
                     return (
                       <Button
                         size="sm"
-                        onClick={() => setShowOnboarding(true)}
-                        className={isCompleted ? 
-                          "bg-gray-400 hover:bg-gray-500 text-gray-700" : 
-                          "bg-green-600 hover:bg-green-700 text-white"
+                        onClick={() => {
+                          if (onboardingStatus) {
+                            setSelectedChecklistId(onboardingStatus.id)
+                            setStatusFilter('all') // Asegurar que se muestre en cualquier filtro
+                            setShowOnboarding(true)
+                          } else {
+                            toast({
+                              title: "Onboarding no disponible",
+                              description: "No se encontró el checklist de onboarding para este programa.",
+                              variant: "destructive"
+                            })
+                          }
+                        }}
+                        disabled={!onboardingStatus}
+                        className={!onboardingStatus ? 
+                          "bg-gray-300 text-gray-500 cursor-not-allowed" :
+                          isCompleted ? 
+                            "bg-gray-400 hover:bg-gray-500 text-gray-700" : 
+                            "bg-green-600 hover:bg-green-700 text-white"
                         }
                       >
                         <UserCheck className="mr-1 h-3 w-3" />

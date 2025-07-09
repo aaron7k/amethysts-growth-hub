@@ -550,21 +550,19 @@ export default function Payments() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="min-w-[150px]">Cliente</TableHead>
-                        <TableHead className="min-w-[120px] hidden sm:table-cell">Producto</TableHead>
-                        <TableHead className="min-w-[100px] hidden lg:table-cell">Total Producto</TableHead>
+                        <TableHead className="min-w-[180px]">Cliente</TableHead>
                         <TableHead className="min-w-[80px]">Cuota</TableHead>
                         <TableHead className="min-w-[100px]">Monto</TableHead>
-                        <TableHead className="min-w-[110px] hidden md:table-cell">Vencimiento</TableHead>
                         <TableHead className="min-w-[100px]">Estado</TableHead>
-                        <TableHead className="min-w-[120px] hidden lg:table-cell">Método de Pago</TableHead>
-                        <TableHead className="min-w-[180px]">Acciones</TableHead>
+                        <TableHead className="min-w-[120px] hidden md:table-cell">Vencimiento</TableHead>
+                        <TableHead className="min-w-[120px] hidden lg:table-cell">Método</TableHead>
+                        <TableHead className="min-w-[140px]">Acciones</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {installments?.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                             No se encontraron cuotas
                           </TableCell>
                         </TableRow>
@@ -573,51 +571,48 @@ export default function Payments() {
                           <TableRow key={installment.id} className="hover:bg-muted/50">
                             <TableCell>
                               <div>
-                                <div className="font-medium text-sm sm:text-base">
+                                <div className="font-medium text-sm">
                                   {installment.subscriptions?.clients?.full_name}
                                 </div>
-                                <div className="text-xs sm:text-sm text-muted-foreground block sm:hidden lg:block">
+                                <div className="text-xs text-muted-foreground">
                                   {installment.subscriptions?.clients?.email}
                                 </div>
-                              </div>
-                            </TableCell>
-                            <TableCell className="hidden sm:table-cell">
-                              <div>
-                                <div className="font-medium text-sm">
-                                  {installment.subscriptions?.plans?.name}
+                                {/* Mobile info */}
+                                <div className="mt-1 md:hidden space-y-1">
+                                  <div className="text-xs">
+                                    <span className="font-medium">{installment.subscriptions?.plans?.name}</span>
+                                    <span className="text-muted-foreground"> • {installment.subscriptions?.plans?.plan_type}</span>
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    Vence: {new Date(installment.due_date).toLocaleDateString()}
+                                  </div>
+                                  {installment.payment_method && (
+                                    <div className="text-xs text-muted-foreground lg:hidden">
+                                      {getPaymentMethodLabel(installment.payment_method)}
+                                    </div>
+                                  )}
                                 </div>
-                                <div className="text-xs text-muted-foreground">
-                                  {installment.subscriptions?.plans?.plan_type}
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell className="hidden lg:table-cell">
-                              <div className="font-semibold text-sm text-blue-600">
-                                ${installment.subscriptions?.plans?.price_usd?.toLocaleString() || 'N/A'}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                Precio total
                               </div>
                             </TableCell>
                             <TableCell className="text-sm">
                               Cuota {installment.installment_number}
                             </TableCell>
-                            <TableCell className="font-semibold text-primary text-sm sm:text-base">
+                            <TableCell className="font-semibold text-primary text-sm">
                               ${installment.amount_usd}
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell text-sm">
-                              {new Date(installment.due_date).toLocaleDateString()}
                             </TableCell>
                             <TableCell>
                               <Badge className={`${getStatusColor(installment.status || '')} text-xs`}>
                                 {installment.status}
                               </Badge>
                             </TableCell>
+                            <TableCell className="hidden md:table-cell text-sm">
+                              {new Date(installment.due_date).toLocaleDateString()}
+                            </TableCell>
                             <TableCell className="hidden lg:table-cell text-sm">
                               {installment.payment_method ? getPaymentMethodLabel(installment.payment_method) : '-'}
                             </TableCell>
                             <TableCell>
-                              <div className="flex gap-1 sm:gap-2">
+                              <div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
                                 {installment.status === 'pending' || installment.status === 'overdue' ? (
                                   <Button
                                     size="sm"
@@ -626,33 +621,36 @@ export default function Payments() {
                                       paymentMethod: 'stripe' as PaymentMethod
                                     })}
                                     disabled={markAsPaidMutation.isPending}
-                                    className="bg-green-600 hover:bg-green-700 text-xs sm:text-sm px-2 sm:px-4"
+                                    className="bg-green-600 hover:bg-green-700 text-xs px-2 h-8"
                                   >
                                     <CheckCircle className="h-3 w-3 mr-1" />
                                     <span className="hidden sm:inline">Marcar Pagado</span>
                                     <span className="sm:hidden">Pagado</span>
                                   </Button>
                                 ) : (
-                                  <span className="text-muted-foreground text-xs sm:text-sm">
-                                    <span className="hidden sm:inline">Pagado el </span>
+                                  <span className="text-muted-foreground text-xs">
+                                    <span className="hidden sm:inline">Pagado </span>
                                     {installment.payment_date ? new Date(installment.payment_date).toLocaleDateString() : '-'}
                                   </span>
                                 )}
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => handleEditPayment(installment)}
-                                >
-                                  <Edit className="h-3 w-3" />
-                                </Button>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => handleDeletePayment(installment)}
-                                  className="text-red-600 hover:text-red-700"
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
+                                <div className="flex gap-1">
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => handleEditPayment(installment)}
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    <Edit className="h-3 w-3" />
+                                  </Button>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => handleDeletePayment(installment)}
+                                    className="text-red-600 hover:text-red-700 h-8 w-8 p-0"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
                               </div>
                             </TableCell>
                           </TableRow>
@@ -717,19 +715,18 @@ export default function Payments() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="min-w-[150px]">Cliente</TableHead>
-                        <TableHead className="min-w-[120px]">Producto</TableHead>
-                        <TableHead className="min-w-[100px]">Fecha</TableHead>
-                        <TableHead className="min-w-[80px]">Cuota</TableHead>
-                        <TableHead className="min-w-[120px]">Costo Total</TableHead>
-                        <TableHead className="min-w-[120px]">Restante a Pagar</TableHead>
-                        <TableHead className="min-w-[100px]">% Completado</TableHead>
+                        <TableHead className="min-w-[180px]">Cliente</TableHead>
+                        <TableHead className="min-w-[120px] hidden sm:table-cell">Producto</TableHead>
+                        <TableHead className="min-w-[100px] hidden md:table-cell">Fecha</TableHead>
+                        <TableHead className="min-w-[80px] hidden lg:table-cell">Cuota</TableHead>
+                        <TableHead className="min-w-[120px]">Total/Restante</TableHead>
+                        <TableHead className="min-w-[120px]">Progreso</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {trackingData?.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                             No se encontraron registros
                           </TableCell>
                         </TableRow>
@@ -740,15 +737,28 @@ export default function Payments() {
                             <TableRow key={item.id} className="hover:bg-muted/50">
                               <TableCell>
                                 <div>
-                                  <div className="font-medium text-sm sm:text-base">
+                                  <div className="font-medium text-sm">
                                     {item.clients?.full_name}
                                   </div>
-                                  <div className="text-xs sm:text-sm text-muted-foreground">
+                                  <div className="text-xs text-muted-foreground">
                                     {item.clients?.email}
+                                  </div>
+                                  {/* Mobile info */}
+                                  <div className="mt-1 sm:hidden space-y-1">
+                                    <div className="text-xs">
+                                      <span className="font-medium">{item.plans?.name}</span>
+                                      <span className="text-muted-foreground"> • {item.plans?.plan_type}</span>
+                                    </div>
+                                    <div className="text-xs text-muted-foreground md:hidden">
+                                      {item.latestInstallment?.due_date ? formatDate(item.latestInstallment.due_date) : formatDate(item.start_date)}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground lg:hidden">
+                                      {item.latestInstallment ? `Cuota ${item.latestInstallment.installment_number}` : 'Sin cuotas'}
+                                    </div>
                                   </div>
                                 </div>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="hidden sm:table-cell">
                                 <div>
                                   <div className="font-medium text-sm">
                                     {item.plans?.name}
@@ -758,27 +768,33 @@ export default function Payments() {
                                   </div>
                                 </div>
                               </TableCell>
-                              <TableCell className="text-sm">
+                              <TableCell className="hidden md:table-cell text-sm">
                                 {item.latestInstallment?.due_date ? formatDate(item.latestInstallment.due_date) : formatDate(item.start_date)}
                               </TableCell>
-                              <TableCell className="text-sm">
+                              <TableCell className="hidden lg:table-cell text-sm">
                                 {item.latestInstallment ? `Cuota ${item.latestInstallment.installment_number}` : 'Sin cuotas'}
                               </TableCell>
-                              <TableCell className="font-semibold text-sm">
-                                ${item.total_cost_usd.toLocaleString()}
-                              </TableCell>
-                              <TableCell className={`font-semibold text-sm ${item.remainingAmount > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                ${item.remainingAmount.toLocaleString()}
-                              </TableCell>
-                              <TableCell className="text-sm">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-full bg-gray-200 rounded-full h-2">
-                                    <div 
-                                      className="bg-primary h-2 rounded-full" 
-                                      style={{width: `${completionPercentage}%`}}
-                                    ></div>
+                              <TableCell>
+                                <div className="space-y-1">
+                                  <div className="font-semibold text-sm">
+                                    ${item.total_cost_usd.toLocaleString()}
                                   </div>
-                                  <span className="text-xs font-medium">{completionPercentage}%</span>
+                                  <div className={`font-semibold text-xs ${item.remainingAmount > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                    Restante: ${item.remainingAmount.toLocaleString()}
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="space-y-2">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-full bg-gray-200 rounded-full h-2">
+                                      <div 
+                                        className="bg-primary h-2 rounded-full" 
+                                        style={{width: `${completionPercentage}%`}}
+                                      ></div>
+                                    </div>
+                                  </div>
+                                  <div className="text-xs font-medium text-center">{completionPercentage}%</div>
                                 </div>
                               </TableCell>
                             </TableRow>
@@ -803,7 +819,7 @@ export default function Payments() {
           form.reset()
         }
       }}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingPayment ? 'Editar Pago' : 'Crear Nuevo Pago'}</DialogTitle>
             <DialogDescription>

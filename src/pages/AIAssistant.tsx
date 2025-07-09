@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
-import { Send, Mic, MicOff, Bot, User, Loader2 } from "lucide-react";
+import { Send, Mic, MicOff, Bot, User, Loader2, Database, BookOpen } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 
 interface Message {
@@ -22,6 +23,7 @@ export default function AIAssistant() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [assistantType, setAssistantType] = useState<'sql' | 'rag'>('sql');
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -64,7 +66,11 @@ export default function AIAssistant() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('https://hooks.infragrowthai.com/webhook/infragrowth/sql-assistant', {
+      const webhookUrl = assistantType === 'sql' 
+        ? 'https://hooks.infragrowthai.com/webhook/infragrowth/sql-assistant'
+        : 'https://hooks.infragrowthai.com/webhook/infragrowth/rag-assistant';
+        
+      const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -72,7 +78,8 @@ export default function AIAssistant() {
         body: JSON.stringify({
           sessionId: user.id,
           messageType: messageType,
-          message: content
+          message: content,
+          assistantType: assistantType
         })
       });
 
@@ -178,9 +185,40 @@ export default function AIAssistant() {
     <div className="h-full flex flex-col bg-background overflow-hidden">
       {/* Header */}
       <div className="flex-shrink-0 border-b border-border bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50">
-        <div className="flex items-center gap-2 p-4">
-          <Bot className="h-5 w-5 text-primary" />
-          <h1 className="text-lg font-semibold">Chat con Asistente IA</h1>
+        <div className="flex items-center justify-between p-4">
+          <div className="flex items-center gap-2">
+            <Bot className="h-5 w-5 text-primary" />
+            <h1 className="text-lg font-semibold">Chat con Asistente IA</h1>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Select value={assistantType} onValueChange={(value: 'sql' | 'rag') => setAssistantType(value)}>
+              <SelectTrigger className="w-[160px]">
+                <div className="flex items-center gap-2">
+                  {assistantType === 'sql' ? (
+                    <Database className="h-4 w-4" />
+                  ) : (
+                    <BookOpen className="h-4 w-4" />
+                  )}
+                  <SelectValue />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="sql">
+                  <div className="flex items-center gap-2">
+                    <Database className="h-4 w-4" />
+                    <span>SQL Assistant</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="rag">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="h-4 w-4" />
+                    <span>RAG Assistant</span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
       
@@ -188,9 +226,23 @@ export default function AIAssistant() {
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 ? (
           <div className="text-center text-muted-foreground py-8 h-full flex flex-col items-center justify-center">
-            <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>¡Hola! Soy tu asistente de IA para consultas de base de datos.</p>
-            <p className="text-sm mt-2">Puedes escribir o hablar para hacer consultas.</p>
+            <div className="flex items-center gap-2 mb-4">
+              {assistantType === 'sql' ? (
+                <Database className="h-12 w-12 opacity-50" />
+              ) : (
+                <BookOpen className="h-12 w-12 opacity-50" />
+              )}
+            </div>
+            <p>
+              ¡Hola! Soy tu {assistantType === 'sql' ? 'Asistente SQL' : 'Asistente RAG'}.
+            </p>
+            <p className="text-sm mt-2">
+              {assistantType === 'sql' 
+                ? 'Puedo ayudarte con consultas de base de datos y análisis de datos.'
+                : 'Puedo ayudarte con preguntas sobre documentación y conocimiento general.'
+              }
+            </p>
+            <p className="text-sm mt-1">Puedes escribir o hablar para hacer consultas.</p>
           </div>
         ) : (
           <>

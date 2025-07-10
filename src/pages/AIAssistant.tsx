@@ -216,7 +216,7 @@ export default function AIAssistant() {
       </div>
       
       {/* Messages Area - Scrollable with padding for fixed header and input */}
-      <div className="pt-20 pb-32 px-4 space-y-4 overflow-y-auto h-full">
+      <div className="pt-20 pb-32 px-4 space-y-4 overflow-y-auto h-full" style={{ paddingLeft: 'calc(var(--sidebar-width, 16rem) + 1rem)', paddingRight: '1rem' }}>
         {messages.length === 0 ? (
           <div className="text-center text-muted-foreground py-8 h-full flex flex-col items-center justify-center">
             <div className="flex items-center gap-2 mb-4">

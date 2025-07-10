@@ -184,7 +184,7 @@ export default function AIAssistant() {
   return (
     <div className="h-full flex flex-col bg-background relative">
       {/* Header - Fixed */}
-      <div className="fixed top-16 right-0 z-10 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/95 shadow-card" style={{ left: 'var(--sidebar-width, 16rem)' }}>
+      <div className="fixed top-16 right-0 z-10 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/95 shadow-card transition-all duration-300" style={{ left: 'var(--sidebar-width, 16rem)' }}>
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-2">
             <Bot className="h-5 w-5 text-primary" />
@@ -309,7 +309,7 @@ export default function AIAssistant() {
       </div>
 
       {/* Input Area - Fixed */}
-      <div className="fixed bottom-0 right-0 z-10 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/95 p-4 shadow-floating" style={{ left: 'var(--sidebar-width, 16rem)' }}>
+      <div className="fixed bottom-0 right-0 z-10 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/95 p-4 shadow-floating transition-all duration-300" style={{ left: 'var(--sidebar-width, 16rem)' }}>
         <div className="flex gap-2">
           <Textarea
             ref={inputRef}

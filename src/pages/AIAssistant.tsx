@@ -184,7 +184,7 @@ export default function AIAssistant() {
   return (
     <div className="h-full flex flex-col bg-background relative">
       {/* Header - Fixed */}
-      <div className="fixed top-16 right-0 z-10 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/95 shadow-card transition-all duration-300" style={{ left: 'var(--sidebar-width, 16rem)' }}>
+      <div className="fixed top-16 left-64 right-0 z-10 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/95 shadow-card">
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-2">
             <Bot className="h-5 w-5 text-primary" />
@@ -216,9 +216,9 @@ export default function AIAssistant() {
       </div>
       
       {/* Messages Area - Scrollable with padding for fixed header and input */}
-      <div className="pt-20 pb-32 px-4 space-y-4 overflow-y-auto h-full flex flex-col items-center transition-all duration-300" style={{ paddingLeft: 'calc(var(--sidebar-width, 16rem) + 1rem)', paddingRight: '1rem' }}>
+      <div className="pt-20 pb-32 px-4 space-y-4 overflow-y-auto h-full">
         {messages.length === 0 ? (
-          <div className="text-center text-muted-foreground py-8 flex-1 flex flex-col items-center justify-center max-w-2xl w-full">
+          <div className="text-center text-muted-foreground py-8 h-full flex flex-col items-center justify-center">
             <div className="flex items-center gap-2 mb-4">
               {assistantType === 'sql' ? (
                 <Database className="h-12 w-12 opacity-50" />
@@ -238,7 +238,7 @@ export default function AIAssistant() {
             <p className="text-sm mt-1">Puedes escribir o hablar para hacer consultas.</p>
           </div>
         ) : (
-          <div className="w-full max-w-2xl space-y-4">
+          <>
             {messages.map((message) => (
               <div
                 key={message.id}
@@ -304,13 +304,13 @@ export default function AIAssistant() {
             )}
             
             <div ref={messagesEndRef} />
-          </div>
+          </>
         )}
       </div>
 
       {/* Input Area - Fixed */}
-      <div className="fixed bottom-0 right-0 z-10 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/95 p-4 shadow-floating transition-all duration-300" style={{ left: 'var(--sidebar-width, 16rem)' }}>
-        <div className="flex gap-2 max-w-2xl mx-auto w-full">
+      <div className="fixed bottom-0 left-64 right-0 z-10 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/95 p-4 shadow-floating">
+        <div className="flex gap-2">
           <Textarea
             ref={inputRef}
             value={input}

@@ -25,8 +25,50 @@ export default function AIAssistant() {
   const [isRecording, setIsRecording] = useState(false);
   const [assistantType, setAssistantType] = useState<'sql' | 'rag'>('sql');
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [sidebarWidth, setSidebarWidth] = useState(256); // 16rem = 256px
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Detectar cambios en el sidebar
+  useEffect(() => {
+    const detectSidebarWidth = () => {
+      const sidebar = document.querySelector('[data-sidebar]') || document.querySelector('aside') || document.querySelector('nav');
+      if (sidebar) {
+        const width = sidebar.getBoundingClientRect().width;
+        setSidebarWidth(width);
+      } else {
+        // Fallback: detectar por media queries o clase CSS
+        const isCollapsed = document.body.classList.contains('sidebar-collapsed') || 
+                           document.documentElement.classList.contains('sidebar-collapsed') ||
+                           window.innerWidth < 768;
+        setSidebarWidth(isCollapsed ? 64 : 256); // 4rem collapsed, 16rem expanded
+      }
+    };
+
+    // Detectar cambios iniciales
+    detectSidebarWidth();
+
+    // Observar cambios en el DOM
+    const observer = new MutationObserver(detectSidebarWidth);
+    observer.observe(document.body, { 
+      attributes: true, 
+      attributeFilter: ['class'],
+      subtree: true 
+    });
+
+    // Observar cambios de tamaño de ventana
+    const resizeObserver = new ResizeObserver(detectSidebarWidth);
+    const sidebar = document.querySelector('[data-sidebar]') || document.querySelector('aside') || document.querySelector('nav');
+    if (sidebar) {
+      resizeObserver.observe(sidebar);
+    }
+
+    // Cleanup
+    return () => {
+      observer.disconnect();
+      resizeObserver.disconnect();
+    };
+  }, []);
 
   // Auto-scroll cuando se añadan nuevos mensajes
   useEffect(() => {
@@ -181,10 +223,16 @@ export default function AIAssistant() {
     }
   };
 
+  // Calcular el margen izquierdo dinámicamente
+  const contentLeftOffset = sidebarWidth + 16; // sidebar width + padding
+
   return (
     <div className="h-full flex flex-col bg-background relative">
       {/* Header - Fixed */}
-      <div className="fixed top-16 right-0 z-10 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/95 shadow-card transition-all duration-300" style={{ left: 'var(--sidebar-width, 16rem)' }}>
+      <div 
+        className="fixed top-16 right-0 z-10 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/95 shadow-card transition-all duration-300"
+        style={{ left: `${sidebarWidth}px` }}
+      >
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-2">
             <Bot className="h-5 w-5 text-primary" />
@@ -216,7 +264,13 @@ export default function AIAssistant() {
       </div>
       
       {/* Messages Area - Scrollable with padding for fixed header and input */}
-      <div className="pt-20 pb-32 px-4 space-y-4 overflow-y-auto h-full" style={{ paddingLeft: 'calc(var(--sidebar-width, 16rem) + 1rem)', paddingRight: '1rem' }}>
+      <div 
+        className="pt-20 pb-32 px-4 space-y-4 overflow-y-auto h-full"
+        style={{ 
+          marginLeft: `${contentLeftOffset}px`,
+          marginRight: '16px'
+        }}
+      >
         {messages.length === 0 ? (
           <div className="text-center text-muted-foreground py-8 h-full flex flex-col items-center justify-center">
             <div className="flex items-center gap-2 mb-4">
@@ -309,7 +363,10 @@ export default function AIAssistant() {
       </div>
 
       {/* Input Area - Fixed */}
-      <div className="fixed bottom-0 right-0 z-10 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/95 p-4 shadow-floating transition-all duration-300" style={{ left: 'var(--sidebar-width, 16rem)' }}>
+      <div 
+        className="fixed bottom-0 right-0 z-10 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/95 p-4 shadow-floating transition-all duration-300"
+        style={{ left: `${sidebarWidth}px` }}
+      >
         <div className="flex gap-2">
           <Textarea
             ref={inputRef}

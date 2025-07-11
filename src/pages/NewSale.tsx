@@ -272,7 +272,7 @@ export default function NewSale() {
     switch (step) {
       case 1:
         return (
-          <Card className="shadow-card">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <UserPlus className="h-5 w-5 text-primary" />
@@ -356,7 +356,7 @@ export default function NewSale() {
 
       case 2:
         return (
-          <Card className="shadow-card">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <DollarSign className="h-5 w-5 text-primary" />

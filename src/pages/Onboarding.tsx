@@ -213,7 +213,7 @@ export default function Onboarding() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Checklists List */}
-        <Card className="shadow-card">
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5 text-primary" />
@@ -278,7 +278,7 @@ export default function Onboarding() {
         </Card>
 
         {/* Onboarding Checklist */}
-        <Card className="shadow-card">
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5 text-primary" />

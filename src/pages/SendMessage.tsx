@@ -72,7 +72,7 @@ export default function SendMessage() {
   if (!profile?.super_admin) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Card className="max-w-md shadow-floating">
+        <Card className="max-w-md">
           <CardHeader>
             <CardTitle className="text-center text-red-600">Acceso Denegado</CardTitle>
           </CardHeader>

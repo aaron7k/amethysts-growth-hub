@@ -71,7 +71,7 @@ export function TopNavigation() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 h-14 sm:h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center justify-between px-4 sm:px-6">
+      <header className="sticky top-0 z-50 h-14 sm:h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center justify-between px-4 sm:px-6 shadow-card">
         <div className="flex items-center gap-2 sm:gap-4">
           <div className="relative hidden sm:block">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />

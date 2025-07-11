@@ -431,7 +431,7 @@ export default function ClientDetail() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Client Information */}
-        <Card className="lg:col-span-1 shadow-card">
+        <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -487,7 +487,7 @@ export default function ClientDetail() {
         </Card>
 
         {/* Subscriptions */}
-        <Card className="lg:col-span-2 shadow-card">
+        <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5 text-primary" />

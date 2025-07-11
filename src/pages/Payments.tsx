@@ -449,7 +449,7 @@ export default function Payments() {
         <TabsContent value="payments" className="space-y-4">
           {/* Summary Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            <Card className="border-l-4 border-l-yellow-500 shadow-card">
+            <Card className="border-l-4 border-l-yellow-500">
               <CardHeader className="pb-2">
                 <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
                   Pagos Pendientes
@@ -462,7 +462,7 @@ export default function Payments() {
               </CardContent>
             </Card>
 
-            <Card className="border-l-4 border-l-red-500 shadow-card">
+            <Card className="border-l-4 border-l-red-500">
               <CardHeader className="pb-2">
                 <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
                   Pagos Atrasados
@@ -475,7 +475,7 @@ export default function Payments() {
               </CardContent>
             </Card>
 
-            <Card className="border-l-4 border-l-green-500 shadow-card">
+            <Card className="border-l-4 border-l-green-500">
               <CardHeader className="pb-2">
                 <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
                   Pagos Completados
@@ -488,7 +488,7 @@ export default function Payments() {
               </CardContent>
             </Card>
 
-            <Card className="border-l-4 border-l-primary col-span-2 lg:col-span-1 shadow-card">
+            <Card className="border-l-4 border-l-primary col-span-2 lg:col-span-1">
               <CardHeader className="pb-2">
                 <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
                   Monto Pendiente

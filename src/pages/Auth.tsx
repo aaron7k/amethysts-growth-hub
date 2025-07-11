@@ -101,7 +101,7 @@ const Auth = () => {
   if (signupSuccess) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Card className="w-[400px]">
+        <Card className="w-[400px] shadow-floating">
           <CardHeader className="text-center">
             <CardTitle className="text-green-600">¡Registro Exitoso!</CardTitle>
             <CardDescription>
@@ -129,7 +129,7 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
-      <Card className="w-[400px]">
+      <Card className="w-[400px] shadow-floating">
         <CardHeader>
           <CardTitle>Bienvenido</CardTitle>
           <CardDescription>

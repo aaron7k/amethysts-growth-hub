@@ -41,7 +41,7 @@ const PendingApproval = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
-      <Card className="w-[500px]">
+      <Card className="w-[500px] shadow-floating">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <Clock className="h-16 w-16 text-orange-500" />

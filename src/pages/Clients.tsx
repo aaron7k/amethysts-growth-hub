@@ -208,7 +208,7 @@ export default function Clients() {
       </div>
 
       {/* Search and Filters */}
-      <Card>
+      <Card className="shadow-card">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg">Buscar y Filtrar</CardTitle>
           <CardDescription className="text-sm">
@@ -252,7 +252,7 @@ export default function Clients() {
       </Card>
 
       {/* Clients Table */}
-      <Card>
+      <Card className="shadow-card">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg">Lista de Clientes</CardTitle>
           <CardDescription className="text-sm">

@@ -349,7 +349,7 @@ export default function Attendance() {
       </div>
 
       {events?.length === 0 ? (
-        <Card>
+        <Card className="shadow-card">
           <CardContent className="p-6 text-center">
             <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <p className="text-muted-foreground">
@@ -369,7 +369,7 @@ export default function Attendance() {
                 </h2>
                 <div className="grid gap-4">
                   {weekEvents.map((event) => (
-                    <Card key={event.id}>
+                    <Card key={event.id} className="shadow-card">
                       <CardHeader>
                         <div className="flex items-center justify-between">
                           <div>
@@ -505,7 +505,7 @@ export default function Attendance() {
       ) : (
         <div className="grid gap-6">
           {events?.map((event) => (
-            <Card key={event.id}>
+            <Card key={event.id} className="shadow-card">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>

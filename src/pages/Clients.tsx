@@ -37,6 +37,8 @@ export default function Clients() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [clientToDelete, setClientToDelete] = useState<any>(null)
+  const [isOffboardingDialogOpen, setIsOffboardingDialogOpen] = useState(false)
+  const [clientToOffboard, setClientToOffboard] = useState<any>(null)
   const { toast } = useToast()
   const queryClient = useQueryClient()
   const isMobile = useIsMobile()
@@ -196,6 +198,19 @@ export default function Clients() {
   const handleDeleteClient = (client: any) => {
     setClientToDelete(client)
     setIsDeleteDialogOpen(true)
+  }
+
+  const handleOffboardingClient = (client: any) => {
+    setClientToOffboard(client)
+    setIsOffboardingDialogOpen(true)
+  }
+
+  const confirmOffboarding = () => {
+    if (clientToOffboard) {
+      offboardingMutation.mutate(clientToOffboard)
+      setIsOffboardingDialogOpen(false)
+      setClientToOffboard(null)
+    }
   }
 
   const onSubmit = (data: ClientFormData) => {
@@ -395,11 +410,10 @@ export default function Clients() {
                               <Button 
                                 variant="destructive"
                                 size="sm"
-                                onClick={() => offboardingMutation.mutate(client)}
-                                disabled={offboardingMutation.isPending}
-                                className="w-full text-xs bg-red-600 hover:bg-red-700"
+                                onClick={() => handleOffboardingClient(client)}
+                                className="w-full text-xs bg-red-600 hover:bg-red-700 h-7"
                               >
-                                {offboardingMutation.isPending ? "Enviando..." : "Offboarding"}
+                                Offboarding
                               </Button>
                             )}
                             <div className="flex gap-1">
@@ -572,6 +586,37 @@ export default function Clients() {
               className="w-full sm:w-auto"
             >
               {deleteClientMutation.isPending ? "Eliminando..." : "Eliminar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Offboarding Confirmation Dialog */}
+      <Dialog open={isOffboardingDialogOpen} onOpenChange={setIsOffboardingDialogOpen}>
+        <DialogContent className="mx-4">
+          <DialogHeader>
+            <DialogTitle className="text-red-600">⚠️ Confirmar Offboarding</DialogTitle>
+            <DialogDescription className="text-red-700">
+              <strong>¡ATENCIÓN! Esta es una acción peligrosa.</strong>
+              <br /><br />
+              Estás a punto de iniciar el proceso de offboarding para el cliente "{clientToOffboard?.full_name}".
+              <br /><br />
+              Esto eliminará TODOS los servicios y accesos del usuario. Esta acción es irreversible.
+              <br /><br />
+              ¿Estás completamente seguro de que quieres continuar?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setIsOffboardingDialogOpen(false)} className="w-full sm:w-auto">
+              Cancelar
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={confirmOffboarding}
+              disabled={offboardingMutation.isPending}
+              className="w-full sm:w-auto bg-red-600 hover:bg-red-700"
+            >
+              {offboardingMutation.isPending ? "Enviando..." : "SÍ, ELIMINAR TODOS LOS SERVICIOS"}
             </Button>
           </DialogFooter>
         </DialogContent>

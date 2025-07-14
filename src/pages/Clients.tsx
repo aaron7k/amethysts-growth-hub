@@ -146,6 +146,40 @@ export default function Clients() {
     }
   })
 
+  const offboardingMutation = useMutation({
+    mutationFn: async (client: any) => {
+      const response = await fetch('https://hooks.infragrowthai.com/webhook/users/offboarding', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: client.id,
+          ...client
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to send offboarding request')
+      }
+
+      return response.json()
+    },
+    onSuccess: () => {
+      toast({
+        title: "Offboarding iniciado",
+        description: "Se ha enviado la solicitud de offboarding exitosamente."
+      })
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo enviar la solicitud de offboarding. Inténtalo de nuevo.",
+        variant: "destructive"
+      })
+    }
+  })
+
   const handleEditClient = (client: any) => {
     setEditingClient(client)
     form.reset({
@@ -357,6 +391,17 @@ export default function Clients() {
                                 Ver Detalle
                               </Button>
                             </Link>
+                            {client.status && (
+                              <Button 
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => offboardingMutation.mutate(client)}
+                                disabled={offboardingMutation.isPending}
+                                className="w-full text-xs bg-red-600 hover:bg-red-700"
+                              >
+                                {offboardingMutation.isPending ? "Enviando..." : "Offboarding"}
+                              </Button>
+                            )}
                             <div className="flex gap-1">
                               <Button 
                                 variant="outline" 

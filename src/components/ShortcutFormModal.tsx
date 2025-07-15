@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -83,15 +83,15 @@ export function ShortcutFormModal({ open, onOpenChange, onSuccess, editingShortc
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: editingShortcut?.name || "",
-      url: editingShortcut?.url || "",
-      icon: editingShortcut?.icon || "external-link",
-      description: editingShortcut?.description || "",
+      name: "",
+      url: "",
+      icon: "external-link",
+      description: "",
     },
   })
 
   // Reset form when editingShortcut changes
-  useState(() => {
+  useEffect(() => {
     if (editingShortcut) {
       form.reset({
         name: editingShortcut.name,
@@ -107,7 +107,7 @@ export function ShortcutFormModal({ open, onOpenChange, onSuccess, editingShortc
         description: "",
       })
     }
-  })
+  }, [editingShortcut, form])
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true)

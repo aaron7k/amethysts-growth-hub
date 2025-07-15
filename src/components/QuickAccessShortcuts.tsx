@@ -3,10 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { supabase } from "@/integrations/supabase/client"
-import { Copy, Plus, ExternalLink, Edit2, Trash2 } from "lucide-react"
+import { Copy, Plus, ExternalLink, Edit2, Trash2, Eye } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useState } from "react"
 import { ShortcutFormModal } from "./ShortcutFormModal"
+import { AllShortcutsModal } from "./AllShortcutsModal"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,8 +36,9 @@ export function QuickAccessShortcuts() {
   const [editingShortcut, setEditingShortcut] = useState<Shortcut | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [shortcutToDelete, setShortcutToDelete] = useState<Shortcut | null>(null)
+  const [showAllModal, setShowAllModal] = useState(false)
 
-  const { data: shortcuts, refetch } = useQuery({
+  const { data: allShortcuts, refetch } = useQuery({
     queryKey: ['quick-access-shortcuts'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -49,6 +51,10 @@ export function QuickAccessShortcuts() {
       return data as Shortcut[]
     }
   })
+
+  // Show only first 6 shortcuts in the main view
+  const shortcuts = allShortcuts?.slice(0, 6) || []
+  const hasMoreShortcuts = (allShortcuts?.length || 0) > 6
 
   const copyToClipboard = async (url: string, name: string) => {
     try {
@@ -123,15 +129,28 @@ export function QuickAccessShortcuts() {
             Enlaces rápidos a herramientas y formularios importantes
           </CardDescription>
         </div>
-        <Button 
-          onClick={() => setShowForm(true)}
-          size="sm"
-          variant="outline"
-          className="gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          Agregar
-        </Button>
+        <div className="flex gap-2">
+          {hasMoreShortcuts && (
+            <Button 
+              onClick={() => setShowAllModal(true)}
+              size="sm"
+              variant="ghost"
+              className="gap-2"
+            >
+              <Eye className="h-4 w-4" />
+              Ver Todos ({allShortcuts?.length})
+            </Button>
+          )}
+          <Button 
+            onClick={() => setShowForm(true)}
+            size="sm"
+            variant="outline"
+            className="gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Agregar
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -222,8 +241,27 @@ export function QuickAccessShortcuts() {
               </Button>
             </div>
           )}
+
+          {hasMoreShortcuts && shortcuts.length > 0 && (
+            <div className="col-span-full flex justify-center pt-4">
+              <Button 
+                onClick={() => setShowAllModal(true)}
+                variant="outline"
+                size="sm"
+                className="gap-2"
+              >
+                <Eye className="h-4 w-4" />
+                Ver todos los {allShortcuts?.length} accesos directos
+              </Button>
+            </div>
+          )}
         </div>
       </CardContent>
+
+      <AllShortcutsModal 
+        open={showAllModal}
+        onOpenChange={setShowAllModal}
+      />
 
       <ShortcutFormModal 
         open={showForm}

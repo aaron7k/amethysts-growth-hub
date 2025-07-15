@@ -379,6 +379,7 @@ export type Database = {
         Row: {
           client_type: string | null
           created_at: string | null
+          discord_nickname: string | null
           drive_folder_url: string | null
           email: string | null
           full_name: string
@@ -390,6 +391,7 @@ export type Database = {
         Insert: {
           client_type?: string | null
           created_at?: string | null
+          discord_nickname?: string | null
           drive_folder_url?: string | null
           email?: string | null
           full_name: string
@@ -401,6 +403,7 @@ export type Database = {
         Update: {
           client_type?: string | null
           created_at?: string | null
+          discord_nickname?: string | null
           drive_folder_url?: string | null
           email?: string | null
           full_name?: string
@@ -687,6 +690,7 @@ export type Database = {
         Row: {
           approved_at: string | null
           created_at: string | null
+          discord_nickname: string | null
           email: string
           full_name: string | null
           id: string
@@ -700,6 +704,7 @@ export type Database = {
         Insert: {
           approved_at?: string | null
           created_at?: string | null
+          discord_nickname?: string | null
           email: string
           full_name?: string | null
           id: string
@@ -713,6 +718,7 @@ export type Database = {
         Update: {
           approved_at?: string | null
           created_at?: string | null
+          discord_nickname?: string | null
           email?: string
           full_name?: string | null
           id?: string
@@ -782,6 +788,7 @@ export type Database = {
         | "new_sale"
         | "stage_change"
         | "stage_overdue"
+        | "offboarding"
       installment_status: "pending" | "paid" | "overdue"
       payment_method:
         | "crypto"
@@ -942,6 +949,7 @@ export const Constants = {
         "new_sale",
         "stage_change",
         "stage_overdue",
+        "offboarding",
       ],
       installment_status: ["pending", "paid", "overdue"],
       payment_method: [

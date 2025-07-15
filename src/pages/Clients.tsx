@@ -150,7 +150,8 @@ export default function Clients() {
 
   const offboardingMutation = useMutation({
     mutationFn: async (client: any) => {
-      const response = await fetch('https://hooks.infragrowthai.com/webhook/users/offboarding', {
+      // Send to offboarding webhook
+      const offboardingResponse = await fetch('https://hooks.infragrowthai.com/webhook/users/offboarding', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -161,16 +162,34 @@ export default function Clients() {
         })
       })
 
-      if (!response.ok) {
+      if (!offboardingResponse.ok) {
         throw new Error('Failed to send offboarding request')
       }
 
-      return response.json()
+      // Create offboarding alert in database
+      const alertResponse = await supabase.from('alerts').insert({
+        alert_type: 'offboarding',
+        client_id: client.id,
+        title: `Offboarding Pendiente - ${client.full_name}`,
+        message: 'Es necesario corroborar la expulsión del usuario en Discord, y en WhatsApp',
+        slack_channel: '#customer-success',
+        metadata: {
+          client_name: client.full_name,
+          client_email: client.email,
+          phone_number: client.phone_number
+        }
+      })
+
+      if (alertResponse.error) {
+        console.error('Error creating offboarding alert:', alertResponse.error)
+      }
+
+      return offboardingResponse.json()
     },
     onSuccess: () => {
       toast({
         title: "Offboarding iniciado",
-        description: "Se ha enviado la solicitud de offboarding exitosamente."
+        description: "Se ha enviado la solicitud de offboarding y creado la alerta correspondiente."
       })
     },
     onError: () => {

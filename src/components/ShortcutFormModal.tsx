@@ -59,62 +59,112 @@ const iconOptions = [
   { value: "link", label: "Enlace" },
 ]
 
+interface Shortcut {
+  id: string
+  name: string
+  url: string
+  icon: string
+  description?: string
+  display_order: number
+  is_active: boolean
+}
+
 interface ShortcutFormModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess: () => void
+  editingShortcut?: Shortcut | null
 }
 
-export function ShortcutFormModal({ open, onOpenChange, onSuccess }: ShortcutFormModalProps) {
+export function ShortcutFormModal({ open, onOpenChange, onSuccess, editingShortcut }: ShortcutFormModalProps) {
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
-      url: "",
-      icon: "external-link",
-      description: "",
+      name: editingShortcut?.name || "",
+      url: editingShortcut?.url || "",
+      icon: editingShortcut?.icon || "external-link",
+      description: editingShortcut?.description || "",
     },
+  })
+
+  // Reset form when editingShortcut changes
+  useState(() => {
+    if (editingShortcut) {
+      form.reset({
+        name: editingShortcut.name,
+        url: editingShortcut.url,
+        icon: editingShortcut.icon,
+        description: editingShortcut.description || "",
+      })
+    } else {
+      form.reset({
+        name: "",
+        url: "",
+        icon: "external-link",
+        description: "",
+      })
+    }
   })
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true)
     try {
-      // Get the highest display_order to add the new shortcut at the end
-      const { data: existingShortcuts } = await supabase
-        .from('quick_access_shortcuts')
-        .select('display_order')
-        .order('display_order', { ascending: false })
-        .limit(1)
+      if (editingShortcut) {
+        // Update existing shortcut
+        const { error } = await supabase
+          .from('quick_access_shortcuts')
+          .update({
+            name: values.name,
+            url: values.url,
+            icon: values.icon,
+            description: values.description || null,
+          })
+          .eq('id', editingShortcut.id)
 
-      const nextOrder = existingShortcuts?.[0]?.display_order ? existingShortcuts[0].display_order + 1 : 1
+        if (error) throw error
 
-      const { error } = await supabase
-        .from('quick_access_shortcuts')
-        .insert({
-          name: values.name,
-          url: values.url,
-          icon: values.icon,
-          description: values.description || null,
-          display_order: nextOrder,
+        toast({
+          title: "¡Actualizado!",
+          description: "Acceso directo actualizado correctamente",
         })
+      } else {
+        // Create new shortcut
+        const { data: existingShortcuts } = await supabase
+          .from('quick_access_shortcuts')
+          .select('display_order')
+          .order('display_order', { ascending: false })
+          .limit(1)
 
-      if (error) throw error
+        const nextOrder = existingShortcuts?.[0]?.display_order ? existingShortcuts[0].display_order + 1 : 1
 
-      toast({
-        title: "¡Éxito!",
-        description: "Acceso directo creado correctamente",
-      })
+        const { error } = await supabase
+          .from('quick_access_shortcuts')
+          .insert({
+            name: values.name,
+            url: values.url,
+            icon: values.icon,
+            description: values.description || null,
+            display_order: nextOrder,
+          })
+
+        if (error) throw error
+
+        toast({
+          title: "¡Éxito!",
+          description: "Acceso directo creado correctamente",
+        })
+      }
 
       form.reset()
       onSuccess()
     } catch (error) {
-      console.error('Error creating shortcut:', error)
+      console.error('Error saving shortcut:', error)
       toast({
         title: "Error",
-        description: "No se pudo crear el acceso directo",
+        description: editingShortcut ? "No se pudo actualizar el acceso directo" : "No se pudo crear el acceso directo",
         variant: "destructive",
       })
     } finally {
@@ -126,9 +176,9 @@ export function ShortcutFormModal({ open, onOpenChange, onSuccess }: ShortcutFor
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Nuevo Acceso Directo</DialogTitle>
+          <DialogTitle>{editingShortcut ? "Editar Acceso Directo" : "Nuevo Acceso Directo"}</DialogTitle>
           <DialogDescription>
-            Agrega un nuevo enlace de acceso rápido al dashboard
+            {editingShortcut ? "Modifica los detalles del acceso directo" : "Agrega un nuevo enlace de acceso rápido al dashboard"}
           </DialogDescription>
         </DialogHeader>
 
@@ -217,7 +267,7 @@ export function ShortcutFormModal({ open, onOpenChange, onSuccess }: ShortcutFor
               </Button>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Crear Acceso Directo
+                {editingShortcut ? "Actualizar" : "Crear Acceso Directo"}
               </Button>
             </div>
           </form>

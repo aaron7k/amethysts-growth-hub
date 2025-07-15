@@ -3,10 +3,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { supabase } from "@/integrations/supabase/client"
-import { Copy, Plus, ExternalLink } from "lucide-react"
+import { Copy, Plus, ExternalLink, Edit2, Trash2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useState } from "react"
 import { ShortcutFormModal } from "./ShortcutFormModal"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import * as LucideIcons from "lucide-react"
 
 interface Shortcut {
@@ -22,6 +32,9 @@ interface Shortcut {
 export function QuickAccessShortcuts() {
   const { toast } = useToast()
   const [showForm, setShowForm] = useState(false)
+  const [editingShortcut, setEditingShortcut] = useState<Shortcut | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [shortcutToDelete, setShortcutToDelete] = useState<Shortcut | null>(null)
 
   const { data: shortcuts, refetch } = useQuery({
     queryKey: ['quick-access-shortcuts'],
@@ -56,6 +69,46 @@ export function QuickAccessShortcuts() {
   const getIcon = (iconName: string) => {
     const Icon = (LucideIcons as any)[iconName as keyof typeof LucideIcons]
     return Icon ? Icon : LucideIcons.Link
+  }
+
+  const handleEdit = (shortcut: Shortcut) => {
+    setEditingShortcut(shortcut)
+    setShowForm(true)
+  }
+
+  const handleDelete = (shortcut: Shortcut) => {
+    setShortcutToDelete(shortcut)
+    setDeleteDialogOpen(true)
+  }
+
+  const confirmDelete = async () => {
+    if (!shortcutToDelete) return
+
+    try {
+      const { error } = await supabase
+        .from('quick_access_shortcuts')
+        .delete()
+        .eq('id', shortcutToDelete.id)
+
+      if (error) throw error
+
+      toast({
+        title: "¡Eliminado!",
+        description: `Acceso directo "${shortcutToDelete.name}" eliminado correctamente`,
+      })
+
+      refetch()
+    } catch (error) {
+      console.error('Error deleting shortcut:', error)
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el acceso directo",
+        variant: "destructive",
+      })
+    } finally {
+      setDeleteDialogOpen(false)
+      setShortcutToDelete(null)
+    }
   }
 
   return (
@@ -94,9 +147,29 @@ export function QuickAccessShortcuts() {
                     <IconComponent className="h-5 w-5 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-medium text-sm truncate">
-                      {shortcut.name}
-                    </h4>
+                    <div className="flex items-start justify-between">
+                      <h4 className="font-medium text-sm truncate">
+                        {shortcut.name}
+                      </h4>
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleEdit(shortcut)}
+                          className="h-6 w-6 p-0 hover:bg-primary/10"
+                        >
+                          <Edit2 className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleDelete(shortcut)}
+                          className="h-6 w-6 p-0 hover:bg-red-100 text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
                     {shortcut.description && (
                       <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                         {shortcut.description}
@@ -154,12 +227,40 @@ export function QuickAccessShortcuts() {
 
       <ShortcutFormModal 
         open={showForm}
-        onOpenChange={setShowForm}
+        onOpenChange={(open) => {
+          setShowForm(open)
+          if (!open) {
+            setEditingShortcut(null)
+          }
+        }}
         onSuccess={() => {
           refetch()
           setShowForm(false)
+          setEditingShortcut(null)
         }}
+        editingShortcut={editingShortcut}
       />
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar acceso directo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción eliminará permanentemente el acceso directo "{shortcutToDelete?.name}". 
+              Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   )
 }

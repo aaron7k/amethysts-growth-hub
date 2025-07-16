@@ -54,7 +54,8 @@ export default function Dashboard() {
   const { data: pendingTasks } = useQuery({
     queryKey: ['pending-tasks'],
     queryFn: async () => {
-      const { data } = await supabase
+      // Get subscription-based tasks
+      const { data: subscriptionTasks } = await supabase
         .from('subscriptions')
         .select(`
           *,
@@ -64,9 +65,39 @@ export default function Dashboard() {
         .neq('next_step', 'in_service')
         .eq('status', 'active')
         .order('created_at', { ascending: false })
-        .limit(10)
+        .limit(5)
 
-      return data || []
+      // Get offboarding alerts
+      const { data: offboardingAlerts } = await supabase
+        .from('alerts')
+        .select(`
+          *,
+          clients(full_name, email)
+        `)
+        .eq('alert_type', 'offboarding')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(5)
+
+      // Combine and format all tasks
+      const allTasks = [
+        ...(subscriptionTasks || []).map(task => ({
+          ...task,
+          type: 'subscription',
+          taskType: task.next_step
+        })),
+        ...(offboardingAlerts || []).map(alert => ({
+          ...alert,
+          type: 'alert',
+          taskType: 'offboarding',
+          plans: { name: 'Offboarding Pendiente' }
+        }))
+      ]
+
+      // Sort by created_at and limit to 10
+      return allTasks
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 10)
     }
   })
 
@@ -75,7 +106,8 @@ export default function Dashboard() {
       'pending_onboarding': 'Pendiente Onboarding',
       'needs_contact': 'Necesita Contacto',
       'pending_renewal': 'Renovación Pendiente',
-      'overdue_payment': 'Pago Atrasado'
+      'overdue_payment': 'Pago Atrasado',
+      'offboarding': 'Offboarding Pendiente'
     }
     return labels[step as keyof typeof labels] || step
   }
@@ -85,7 +117,8 @@ export default function Dashboard() {
       'pending_onboarding': 'bg-blue-100 text-blue-800',
       'needs_contact': 'bg-yellow-100 text-yellow-800',
       'pending_renewal': 'bg-purple-100 text-purple-800',
-      'overdue_payment': 'bg-red-100 text-red-800'
+      'overdue_payment': 'bg-red-100 text-red-800',
+      'offboarding': 'bg-orange-100 text-orange-800'
     }
     return colors[step as keyof typeof colors] || 'bg-gray-100 text-gray-800'
   }
@@ -199,8 +232,8 @@ export default function Dashboard() {
                         {task.plans?.name}
                       </p>
                     </div>
-                    <Badge className={`text-xs ${getNextStepColor(task.next_step || '')}`}>
-                      {getNextStepLabel(task.next_step || '')}
+                    <Badge className={`text-xs ${getNextStepColor(task.taskType || '')}`}>
+                      {getNextStepLabel(task.taskType || '')}
                     </Badge>
                   </div>
                 ))

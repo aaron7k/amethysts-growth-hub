@@ -119,7 +119,11 @@ export default function Onboarding() {
   // Complete entire checklist
   const completeChecklistMutation = useMutation({
     mutationFn: async (data: { id: string, notes?: string }) => {
-      const { error } = await supabase
+      const checklist = checklists?.find(c => c.id === data.id)
+      if (!checklist) throw new Error('Checklist not found')
+
+      // Update the checklist as completed
+      const { error: checklistError } = await supabase
         .from('accelerator_onboarding_checklist')
         .update({
           is_completed: true,
@@ -129,7 +133,17 @@ export default function Onboarding() {
         })
         .eq('id', data.id)
 
-      if (error) throw error
+      if (checklistError) throw checklistError
+
+      // Update the subscription's next_step to 'in_service'
+      const { error: subscriptionError } = await supabase
+        .from('subscriptions')
+        .update({
+          next_step: 'in_service'
+        })
+        .eq('id', checklist.subscription_id)
+
+      if (subscriptionError) throw subscriptionError
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accelerator-onboarding-checklists'] })

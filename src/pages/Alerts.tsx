@@ -72,6 +72,8 @@ const Alerts = () => {
         return <TrendingUp className="h-5 w-5 text-blue-500" />
       case 'stage_overdue':
         return <Zap className="h-5 w-5 text-red-600" />
+      case 'offboarding':
+        return <XCircle className="h-5 w-5 text-orange-500" />
       default:
         return <AlertCircle className="h-5 w-5" />
     }
@@ -91,6 +93,8 @@ const Alerts = () => {
         return 'Cambio de Etapa'
       case 'stage_overdue':
         return 'Etapa Atrasada'
+      case 'offboarding':
+        return 'Offboarding Pendiente'
       default:
         return type
     }

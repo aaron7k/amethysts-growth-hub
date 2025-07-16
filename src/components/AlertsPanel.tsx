@@ -165,6 +165,8 @@ export function AlertsPanel({ open, onOpenChange }: AlertsPanelProps) {
         return <X className="h-4 w-4 text-red-500" />
       case 'new_sale':
         return <CheckCircle className="h-4 w-4 text-green-500" />
+      case 'offboarding':
+        return <X className="h-4 w-4 text-orange-500" />
       default:
         return <Bell className="h-4 w-4 text-blue-500" />
     }
@@ -180,6 +182,8 @@ export function AlertsPanel({ open, onOpenChange }: AlertsPanelProps) {
         return 'Servicio Finalizado'
       case 'new_sale':
         return 'Nueva Venta'
+      case 'offboarding':
+        return 'Offboarding Pendiente'
       default:
         return type
     }

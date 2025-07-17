@@ -51,7 +51,7 @@ export default function Clients() {
       phone_number: "",
       drive_folder_url: "",
       client_type: "client",
-      status: false
+      status: true
     }
   })
   

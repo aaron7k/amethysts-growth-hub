@@ -801,7 +801,7 @@ export type Database = {
         | "cash"
         | "binance"
         | "mercado_pago"
-      plan_type: "core" | "renovation"
+      plan_type: "core" | "renovation" | "order_bump"
       subscription_next_step:
         | "in_service"
         | "needs_contact"
@@ -964,7 +964,7 @@ export const Constants = {
         "binance",
         "mercado_pago",
       ],
-      plan_type: ["core", "renovation"],
+      plan_type: ["core", "renovation", "order_bump"],
       subscription_next_step: [
         "in_service",
         "needs_contact",

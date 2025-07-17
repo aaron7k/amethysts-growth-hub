@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client"
 import { Users, DollarSign, TrendingUp, AlertCircle, CheckCircle, Clock, UserPlus } from "lucide-react"
 import { Link } from "react-router-dom"
 import { QuickAccessShortcuts } from "@/components/QuickAccessShortcuts"
+import { MonthlyRevenueChart } from "@/components/MonthlyRevenueChart"
 
 export default function Dashboard() {
   const { data: metrics } = useQuery({
@@ -202,6 +203,9 @@ export default function Dashboard() {
 
       {/* Quick Access Shortcuts */}
       <QuickAccessShortcuts />
+
+      {/* Monthly Revenue Chart */}
+      <MonthlyRevenueChart />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Pending Tasks */}

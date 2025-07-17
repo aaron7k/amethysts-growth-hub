@@ -1184,32 +1184,45 @@ const Accelerator = () => {
                     const isCompleted = onboardingStatus?.is_completed || false
                     
                     return (
-                      <Button
-                        size="sm"
-                        onClick={() => {
-                          if (onboardingStatus) {
-                            setSelectedChecklistId(onboardingStatus.id)
-                            setStatusFilter('all') // Asegurar que se muestre en cualquier filtro
-                            setShowOnboarding(true)
-                          } else {
-                            toast({
-                              title: "Onboarding no disponible",
-                              description: "No se encontró el checklist de onboarding para este programa.",
-                              variant: "destructive"
-                            })
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            if (onboardingStatus) {
+                              setSelectedChecklistId(onboardingStatus.id)
+                              setStatusFilter('all') // Asegurar que se muestre en cualquier filtro
+                              setShowOnboarding(true)
+                            } else {
+                              toast({
+                                title: "Onboarding no disponible",
+                                description: "No se encontró el checklist de onboarding para este programa.",
+                                variant: "destructive"
+                              })
+                            }
+                          }}
+                          disabled={!onboardingStatus}
+                          className={!onboardingStatus ? 
+                            "bg-gray-300 text-gray-500 cursor-not-allowed" :
+                            isCompleted ? 
+                              "bg-gray-400 hover:bg-gray-500 text-gray-700" : 
+                              "bg-green-600 hover:bg-green-700 text-white"
                           }
-                        }}
-                        disabled={!onboardingStatus}
-                        className={!onboardingStatus ? 
-                          "bg-gray-300 text-gray-500 cursor-not-allowed" :
-                          isCompleted ? 
-                            "bg-gray-400 hover:bg-gray-500 text-gray-700" : 
-                            "bg-green-600 hover:bg-green-700 text-white"
-                        }
-                      >
-                        <UserCheck className="mr-1 h-3 w-3" />
-                        Onboarding
-                      </Button>
+                        >
+                          <UserCheck className="mr-1 h-3 w-3" />
+                          Onboarding
+                        </Button>
+                        
+                        {!isCompleted && onboardingStatus && (
+                          <Button
+                            size="sm"
+                            onClick={() => navigate('/onboarding')}
+                            className="bg-purple-600 hover:bg-purple-700 text-white"
+                          >
+                            <Play className="mr-1 h-3 w-3" />
+                            Ejecutar Onboarding
+                          </Button>
+                        )}
+                      </div>
                     )
                   })()}
                 </div>

@@ -8,8 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
-import { UserCheck, CheckCircle, Clock, ArrowRight, FileText, Filter, Users } from "lucide-react"
+import { UserCheck, CheckCircle, Clock, ArrowRight, FileText, Filter, Users, ArrowLeft, Play } from "lucide-react"
 import { useUserProfile } from "@/hooks/useUserProfile"
+import { useNavigate } from "react-router-dom"
 
 const CHECKLIST_ITEMS = [
   { 
@@ -51,6 +52,7 @@ export default function Onboarding() {
   const { toast } = useToast()
   const queryClient = useQueryClient()
   const { data: userProfile } = useUserProfile()
+  const navigate = useNavigate()
 
   // Fetch accelerator onboarding checklists
   const { data: checklists, isLoading } = useQuery({
@@ -156,6 +158,49 @@ export default function Onboarding() {
     }
   })
 
+  // Execute onboarding webhook
+  const executeOnboardingMutation = useMutation({
+    mutationFn: async (checklist: any) => {
+      const clientData = {
+        client_id: checklist.client_id,
+        subscription_id: checklist.subscription_id,
+        client_name: checklist.clients?.full_name,
+        client_email: checklist.clients?.email,
+        client_phone: checklist.clients?.phone_number,
+        plan_name: checklist.subscriptions?.plans?.name,
+        start_date: checklist.subscriptions?.start_date,
+        end_date: checklist.subscriptions?.end_date
+      }
+
+      const response = await fetch('https://hooks.infragrowthai.com/webhook/onboarding-button', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(clientData)
+      })
+
+      if (!response.ok) {
+        throw new Error('Error al ejecutar onboarding')
+      }
+
+      return response.json()
+    },
+    onSuccess: () => {
+      toast({
+        title: "Onboarding ejecutado",
+        description: "El webhook de onboarding ha sido ejecutado exitosamente."
+      })
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo ejecutar el onboarding.",
+        variant: "destructive"
+      })
+    }
+  })
+
   const selectedChecklist = checklists?.find(c => c.id === selectedChecklistId)
 
   const handleItemToggle = (field: string, value: boolean) => {
@@ -199,14 +244,25 @@ export default function Onboarding() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-            <UserCheck className="h-8 w-8 text-primary" />
-            Onboarding Accelerator
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Gestión del checklist de onboarding para alumnos del programa Accelerator
-          </p>
+        <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/accelerator')}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Volver
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
+              <UserCheck className="h-8 w-8 text-primary" />
+              Onboarding Accelerator
+            </h1>
+            <p className="text-muted-foreground mt-2">
+              Gestión del checklist de onboarding para alumnos del programa Accelerator
+            </p>
+          </div>
         </div>
         
         {/* Filter */}
@@ -404,6 +460,14 @@ export default function Onboarding() {
                 {/* Actions */}
                 {!selectedChecklist.is_completed && (
                   <div className="flex flex-col gap-2">
+                    <Button
+                      onClick={() => executeOnboardingMutation.mutate(selectedChecklist)}
+                      disabled={executeOnboardingMutation.isPending}
+                      className="w-full bg-gradient-to-r from-yellow-400 to-yellow-600 hover:from-yellow-500 hover:to-yellow-700 text-white"
+                    >
+                      <Play className="h-4 w-4 mr-2" />
+                      Ejecutar Onboarding
+                    </Button>
                     <Button
                       onClick={handleCompleteOnboarding}
                       disabled={completeChecklistMutation.isPending || !isAllItemsCompleted(selectedChecklist)}

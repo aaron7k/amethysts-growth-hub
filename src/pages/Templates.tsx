@@ -173,12 +173,13 @@ const Templates = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="loom">URL de Loom</Label>
+                    <Label htmlFor="loom">URL de Loom *</Label>
                     <Input
                       id="loom"
                       value={formData.loom}
                       onChange={(e) => handleInputChange("loom", e.target.value)}
                       placeholder="https://loom.com/..."
+                      required
                     />
                   </div>
                 </div>
@@ -226,7 +227,7 @@ const Templates = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="file">Archivo JSON</Label>
+                    <Label htmlFor="file">Archivo JSON *</Label>
                     <div className="flex items-center gap-2">
                       <Input
                         id="file"
@@ -234,13 +235,14 @@ const Templates = () => {
                         accept=".json"
                         onChange={(e) => handleFileChange("file", e.target.files?.[0] || null)}
                         className="flex-1"
+                        required
                       />
                       <Upload className="h-4 w-4 text-muted-foreground" />
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="image">Imagen</Label>
+                    <Label htmlFor="image">Imagen *</Label>
                     <div className="flex items-center gap-2">
                       <Input
                         id="image"
@@ -248,6 +250,7 @@ const Templates = () => {
                         accept="image/*"
                         onChange={(e) => handleFileChange("image", e.target.files?.[0] || null)}
                         className="flex-1"
+                        required
                       />
                       <Upload className="h-4 w-4 text-muted-foreground" />
                     </div>

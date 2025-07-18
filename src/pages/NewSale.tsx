@@ -22,7 +22,8 @@ export default function NewSale() {
     full_name: '',
     email: '',
     phone_number: '',
-    drive_folder_url: ''
+    drive_folder_url: '',
+    client_type: 'client'
   })
   const [selectedClientId, setSelectedClientId] = useState(preselectedClientId || '')
   const [selectedPlanId, setSelectedPlanId] = useState('')
@@ -339,14 +340,27 @@ export default function NewSale() {
                     </div>
                     
                     <div>
-                      <Label htmlFor="drive_folder_url">URL Carpeta Drive</Label>
-                      <Input
-                        id="drive_folder_url"
-                        value={clientData.drive_folder_url}
-                        onChange={(e) => setClientData({...clientData, drive_folder_url: e.target.value})}
-                        placeholder="https://drive.google.com/..."
-                      />
+                      <Label htmlFor="client_type">Tipo de Cliente</Label>
+                      <Select value={clientData.client_type} onValueChange={(value) => setClientData({...clientData, client_type: value})}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar tipo..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="client">Cliente</SelectItem>
+                          <SelectItem value="accelerator_member">Miembro Aceleradora</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="drive_folder_url">URL Carpeta Drive</Label>
+                    <Input
+                      id="drive_folder_url"
+                      value={clientData.drive_folder_url}
+                      onChange={(e) => setClientData({...clientData, drive_folder_url: e.target.value})}
+                      placeholder="https://drive.google.com/..."
+                    />
                   </div>
                 </div>
               )}

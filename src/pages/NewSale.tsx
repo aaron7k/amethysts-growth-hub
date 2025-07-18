@@ -347,6 +347,7 @@ export default function NewSale() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="client">Cliente</SelectItem>
+                          <SelectItem value="student">Estudiante</SelectItem>
                           <SelectItem value="accelerator_member">Miembro Aceleradora</SelectItem>
                         </SelectContent>
                       </Select>

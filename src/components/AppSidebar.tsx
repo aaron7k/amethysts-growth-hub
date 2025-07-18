@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { Home, Users, CreditCard, Plus, UserCheck, Settings, Zap, FileText, ChevronLeft, ChevronRight, BookOpen, Server, Calendar, Send, Bot } from "lucide-react"
+import { Home, Users, CreditCard, Plus, UserCheck, Settings, Zap, FileText, ChevronLeft, ChevronRight, BookOpen, Server, Calendar, Send, Bot, Layout } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import { useUserProfile } from "@/hooks/useUserProfile"
 
@@ -13,6 +13,7 @@ const mainItems = [
   { title: "Registrar nuevo pago", url: "/new-sale", icon: Plus },
   { title: "Aceleradora", url: "/accelerator", icon: Zap },
   { title: "Asistencias", url: "/attendance", icon: Calendar },
+  { title: "Templates", url: "/templates", icon: Layout },
   { title: "Documentación", url: "/documentation", icon: BookOpen },
 ]
 

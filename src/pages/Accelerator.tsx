@@ -15,6 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Textarea } from "@/components/ui/textarea"
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
+import { Search } from "lucide-react"
 import StageChecklist from "@/components/StageChecklist"
 import ChecklistTemplateManager from "@/components/ChecklistTemplateManager"
 import DiscordChannelManager from "@/components/DiscordChannelManager"
@@ -98,6 +99,7 @@ const Accelerator = () => {
   const [showTemplateManager, setShowTemplateManager] = useState(false)
   const [activateStagesOpen, setActivateStagesOpen] = useState(false)
   const [selectedProgramForActivation, setSelectedProgramForActivation] = useState<AcceleratorProgram | null>(null)
+  const [searchTerm, setSearchTerm] = useState<string>("")
   
   // Onboarding states
   const [selectedChecklistId, setSelectedChecklistId] = useState<string>('')
@@ -958,6 +960,11 @@ const Accelerator = () => {
     return <div className="p-6">Cargando programas...</div>
   }
 
+  // Filter programs by search term
+  const filteredPrograms = programs?.filter(program =>
+    program.subscriptions.clients.full_name.toLowerCase().includes(searchTerm.toLowerCase())
+  ) || []
+
   return (
     <div className="p-6">
       <div className="mb-6 flex items-center justify-between">
@@ -979,7 +986,20 @@ const Accelerator = () => {
         </div>
       </div>
 
-      {programs?.length === 0 && (
+      {/* Search Bar */}
+      <div className="mb-6">
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input
+            placeholder="Buscar por nombre del cliente..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+      </div>
+
+      {filteredPrograms.length === 0 && programs?.length === 0 && (
         <Card>
           <CardContent className="p-6 text-center">
             <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -988,8 +1008,17 @@ const Accelerator = () => {
         </Card>
       )}
 
+      {filteredPrograms.length === 0 && programs?.length > 0 && (
+        <Card>
+          <CardContent className="p-6 text-center">
+            <Search className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <p className="text-muted-foreground">No se encontraron programas con el término de búsqueda "{searchTerm}"</p>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid gap-6">
-        {programs?.map((program) => (
+        {filteredPrograms.map((program) => (
           <Card key={program.id} className="w-full">
             <CardHeader>
               <div className="flex items-center justify-between">
